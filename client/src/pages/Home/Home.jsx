@@ -1,18 +1,20 @@
 import { useState, useEffect, useRef } from 'react'
 import { Link } from 'react-router-dom'
-import { ChevronLeft, ChevronRight, Play, Calendar, Zap, Flame, Clapperboard, TrendingUp, Star, ExternalLink } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Play, Calendar, Zap, Flame, Clapperboard, TrendingUp, Star, ExternalLink, Mail, ArrowRight } from 'lucide-react'
 import MovieCard from '../../components/MovieCard/MovieCard'
 import EventCard from '../../components/EventCard/EventCard'
 import { movies, events } from '../../data/mockData'
 
 const Home = () => {
   const [bannerIndex, setBannerIndex] = useState(0)
+  const [email, setEmail] = useState('')
   const bannerRef = useRef(null)
   
-  // Featured movies for banner - use first 5
   const featuredMovies = movies.slice(0, 5)
+  const trendingMovies = movies.filter(m => m.rating >= 8).slice(0, 6)
+  const topRatedMovies = [...movies].sort((a, b) => b.rating - a.rating).slice(0, 6)
+  const exclusiveMovies = movies.filter(m => m.language === 'English' || m.rating >= 8.5).slice(0, 6)
   
-  // Auto-rotate banner every 5 seconds
   useEffect(() => {
     const interval = setInterval(() => {
       setBannerIndex((prev) => (prev + 1) % featuredMovies.length)
@@ -23,27 +25,29 @@ const Home = () => {
   const nextBanner = () => setBannerIndex((prev) => (prev + 1) % featuredMovies.length)
   const prevBanner = () => setBannerIndex((prev) => (prev - 1 + featuredMovies.length) % featuredMovies.length)
 
-  // Filter options like real BMS
   const languages = ['Hindi', 'English', 'Tamil', 'Telugu', 'Kannada', 'Malayalam']
   const genres = ['Action', 'Drama', 'Comedy', 'Thriller', 'Romance', 'Horror']
 
-  // Scroll handlers for horizontal scroll
   const scrollRef = useRef(null)
-  const scroll = (direction) => {
-    if (scrollRef.current) {
+  const scroll = (direction, ref) => {
+    if (ref.current) {
       const scrollAmount = 300
-      scrollRef.current.scrollBy({
+      ref.current.scrollBy({
         left: direction === 'left' ? -scrollAmount : scrollAmount,
         behavior: 'smooth'
       })
     }
   }
 
+  const handleNewsletterSubmit = (e) => {
+    e.preventDefault()
+    setEmail('')
+  }
+
   return (
     <div className="bg-[#1A1A1A] min-h-screen">
-      {/* Banner Carousel - Real BMS Style - Full Width & Bigger */}
+      {/* Banner Carousel */}
       <div className="relative w-full h-[400px] md:h-[500px] lg:h-[550px] overflow-hidden bg-[#0f0f0f]">
-        {/* Banner Slides with Smooth Transitions */}
         {featuredMovies.map((movie, index) => (
           <div
             key={movie.id}
@@ -51,16 +55,13 @@ const Home = () => {
               index === bannerIndex ? 'opacity-100 scale-100' : 'opacity-0 scale-105'
             }`}
           >
-            {/* Background Image */}
             <div 
               className="absolute inset-0 bg-cover bg-center"
               style={{ backgroundImage: `url(${movie.backdrop})` }}
             />
-            {/* Gradient Overlay - More prominent like BMS */}
             <div className="absolute inset-0 bg-gradient-to-r from-black/95 via-black/70 to-transparent" />
             <div className="absolute inset-0 bg-gradient-to-t from-[#1A1A1A] via-transparent to-transparent" />
             
-            {/* Content */}
             <div className="relative h-full max-w-7xl mx-auto px-4 md:px-8 flex items-center">
               <div className="max-w-2xl md:max-w-xl">
                 <div className="flex items-center gap-3 mb-3">
@@ -81,12 +82,12 @@ const Home = () => {
                 <div className="flex flex-wrap gap-3">
                   <Link 
                     to={`/movie/${movie.id}`}
-                    className="flex items-center gap-2 px-6 py-3 bg-[#FF0040] text-white rounded-lg font-semibold hover:bg-[#CC0033] transition-colors shadow-lg shadow-[#FF0040]/30"
+                    className="flex items-center gap-2 px-6 py-3 bg-[#FF0040] text-white rounded-lg font-semibold hover:bg-[#CC0033] transition-colors shadow-lg shadow-[#FF0040]/30 hover:shadow-[#FF0040]/50 transform hover:scale-105"
                   >
                     <Play className="w-5 h-5" fill="white" />
                     Book Tickets
                   </Link>
-                  <button className="flex items-center gap-2 px-6 py-3 bg-white/10 text-white rounded-lg font-semibold hover:bg-white/20 transition-colors backdrop-blur-sm border border-white/20">
+                  <button className="flex items-center gap-2 px-6 py-3 bg-white/10 text-white rounded-lg font-semibold hover:bg-white/20 transition-colors backdrop-blur-sm border border-white/20 hover:scale-105">
                     <Play className="w-5 h-5" />
                     Watch Trailer
                   </button>
@@ -96,7 +97,6 @@ const Home = () => {
           </div>
         ))}
 
-        {/* Navigation Arrows - Styled like BMS */}
         <button 
           onClick={prevBanner}
           className="absolute left-2 md:left-4 top-1/2 -translate-y-1/2 w-10 h-10 md:w-12 md:h-12 bg-black/40 hover:bg-[#FF0040] rounded-full flex items-center justify-center text-white transition-all z-10 group"
@@ -110,7 +110,6 @@ const Home = () => {
           <ChevronRight className="w-6 h-6 md:w-8 md:h-8 group-hover:scale-110 transition-transform" />
         </button>
 
-        {/* Dots - Styled like BMS */}
         <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2 z-10">
           {featuredMovies.map((_, index) => (
             <button
@@ -124,13 +123,12 @@ const Home = () => {
         </div>
       </div>
 
-      {/* Quick Filters - Real BMS Style */}
+      {/* Quick Filters */}
       <section className="bg-[#1F1F1F] py-4 border-b border-gray-800">
         <div className="max-w-7xl mx-auto px-4">
           <div className="flex flex-wrap gap-3 items-center">
             <span className="text-gray-400 text-sm font-medium">Filters:</span>
             
-            {/* Language Filter */}
             <div className="flex gap-2 flex-wrap">
               {languages.slice(0, 5).map((lang) => (
                 <button 
@@ -144,7 +142,6 @@ const Home = () => {
 
             <div className="h-6 w-px bg-gray-700 hidden sm:block" />
 
-            {/* Genre Filter */}
             <div className="flex gap-2 flex-wrap">
               {genres.slice(0, 5).map((genre) => (
                 <button 
@@ -159,35 +156,36 @@ const Home = () => {
         </div>
       </section>
 
-      {/* Recommended Movies - Real BMS Layout with Horizontal Scroll */}
+      {/* Trending Section */}
       <section className="max-w-7xl mx-auto px-4 py-8">
         <div className="flex items-center justify-between mb-6">
-          <div>
-            <h2 className="text-xl font-bold text-white">Recommended Movies</h2>
+          <div className="flex items-center gap-3">
+            <div className="w-1 h-8 bg-gradient-to-b from-[#FF0040] to-[#FF6B35] rounded-full" />
+            <div>
+              <h2 className="text-xl font-bold text-white">Trending Now</h2>
+              <p className="text-gray-500 text-xs mt-0.5">Most popular movies this week</p>
+            </div>
           </div>
           <Link 
             to="/movies" 
-            className="text-[#FF0040] hover:text-[#CC0033] text-sm font-medium flex items-center gap-1"
+            className="text-[#FF0040] hover:text-[#CC0033] text-sm font-medium flex items-center gap-1 group"
           >
             See All
-            <ChevronRight className="w-4 h-4" />
+            <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
           </Link>
         </div>
 
         <div className="relative group">
-          {/* Left Scroll Button */}
           <button 
-            onClick={() => scroll('left')}
+            onClick={() => scroll('left', scrollRef)}
             className="absolute left-0 top-0 bottom-4 w-12 bg-gradient-to-r from-[#1A1A1A] to-transparent z-10 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
           >
             <div className="w-8 h-8 bg-black/70 rounded-full flex items-center justify-center text-white hover:bg-[#FF0040]">
               <ChevronLeft className="w-5 h-5" />
             </div>
           </button>
-          
-          {/* Right Scroll Button */}
           <button 
-            onClick={() => scroll('right')}
+            onClick={() => scroll('right', scrollRef)}
             className="absolute right-0 top-0 bottom-4 w-12 bg-gradient-to-l from-[#1A1A1A] to-transparent z-10 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
           >
             <div className="w-8 h-8 bg-black/70 rounded-full flex items-center justify-center text-white hover:bg-[#FF0040]">
@@ -195,9 +193,158 @@ const Home = () => {
             </div>
           </button>
 
-          {/* Scrollable Container */}
           <div 
             ref={scrollRef}
+            className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide scroll-smooth"
+            style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+          >
+            {trendingMovies.map((movie) => (
+              <MovieCard key={movie.id} movie={movie} />
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Top Rated Section */}
+      <section className="max-w-7xl mx-auto px-4 py-6">
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-3">
+            <div className="w-1 h-8 bg-yellow-500 rounded-full" />
+            <div>
+              <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                Top Rated
+                <Star className="w-5 h-5 text-yellow-500" fill="#fbbf24" />
+              </h2>
+              <p className="text-gray-500 text-xs mt-0.5">Critics' choice movies</p>
+            </div>
+          </div>
+          <Link 
+            to="/movies?filter=top" 
+            className="text-[#FF0040] hover:text-[#CC0033] text-sm font-medium flex items-center gap-1 group"
+          >
+            See All
+            <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+          </Link>
+        </div>
+
+        <div className="relative group">
+          <button 
+            onClick={() => scroll('left', scrollRef)}
+            className="absolute left-0 top-0 bottom-4 w-12 bg-gradient-to-r from-[#1A1A1A] to-transparent z-10 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+          >
+            <div className="w-8 h-8 bg-black/70 rounded-full flex items-center justify-center text-white hover:bg-[#FF0040]">
+              <ChevronLeft className="w-5 h-5" />
+            </div>
+          </button>
+          <button 
+            onClick={() => scroll('right', scrollRef)}
+            className="absolute right-0 top-0 bottom-4 w-12 bg-gradient-to-l from-[#1A1A1A] to-transparent z-10 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+          >
+            <div className="w-8 h-8 bg-black/70 rounded-full flex items-center justify-center text-white hover:bg-[#FF0040]">
+              <ChevronRight className="w-5 h-5" />
+            </div>
+          </button>
+
+          <div 
+            className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide scroll-smooth"
+            style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+          >
+            {topRatedMovies.map((movie) => (
+              <MovieCard key={movie.id} movie={movie} />
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Exclusive Previews */}
+      <section className="max-w-7xl mx-auto px-4 py-6">
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-3">
+            <div className="w-1 h-8 bg-purple-500 rounded-full" />
+            <div>
+              <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                Exclusive Previews
+                <Clapperboard className="w-5 h-5 text-purple-500" />
+              </h2>
+              <p className="text-gray-500 text-xs mt-0.5">Premier access screenings</p>
+            </div>
+          </div>
+          <Link 
+            to="/movies?filter=exclusive" 
+            className="text-[#FF0040] hover:text-[#CC0033] text-sm font-medium flex items-center gap-1 group"
+          >
+            See All
+            <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+          </Link>
+        </div>
+
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+          {exclusiveMovies.map((movie) => (
+            <Link 
+              key={`exclusive-${movie.id}`}
+              to={`/movie/${movie.id}`}
+              className="group cursor-pointer"
+            >
+              <div className="relative aspect-[2/3] rounded-xl overflow-hidden bg-[#2A2A2A]">
+                <img 
+                  src={movie.poster} 
+                  alt={movie.title}
+                  className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
+                <span className="absolute top-3 left-3 px-2 py-1 bg-purple-500 text-white text-[10px] font-bold rounded flex items-center gap-1">
+                  <Clapperboard className="w-3 h-3" />
+                  EXCLUSIVE
+                </span>
+                <div className="absolute bottom-3 left-3 right-3">
+                  <h3 className="text-white font-semibold text-sm truncate group-hover:text-[#FF0040] transition-colors">
+                    {movie.title}
+                  </h3>
+                  <div className="flex items-center gap-1 mt-1">
+                    <Star className="w-3 h-3 text-yellow-400" fill="#fbbf24" />
+                    <span className="text-gray-300 text-xs">{movie.rating}</span>
+                  </div>
+                </div>
+              </div>
+            </Link>
+          ))}
+        </div>
+      </section>
+
+      {/* Recommended Movies */}
+      <section className="max-w-7xl mx-auto px-4 py-6">
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h2 className="text-xl font-bold text-white">Recommended Movies</h2>
+          </div>
+          <Link 
+            to="/movies" 
+            className="text-[#FF0040] hover:text-[#CC0033] text-sm font-medium flex items-center gap-1 group"
+          >
+            See All
+            <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+          </Link>
+        </div>
+
+        <div className="relative group">
+          <button 
+            onClick={() => scroll('left', scrollRef)}
+            className="absolute left-0 top-0 bottom-4 w-12 bg-gradient-to-r from-[#1A1A1A] to-transparent z-10 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+          >
+            <div className="w-8 h-8 bg-black/70 rounded-full flex items-center justify-center text-white hover:bg-[#FF0040]">
+              <ChevronLeft className="w-5 h-5" />
+            </div>
+          </button>
+          <button 
+            onClick={() => scroll('right', scrollRef)}
+            className="absolute right-0 top-0 bottom-4 w-12 bg-gradient-to-l from-[#1A1A1A] to-transparent z-10 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+          >
+            <div className="w-8 h-8 bg-black/70 rounded-full flex items-center justify-center text-white hover:bg-[#FF0040]">
+              <ChevronRight className="w-5 h-5" />
+            </div>
+          </button>
+
+          <div 
             className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide scroll-smooth"
             style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
           >
@@ -208,7 +355,7 @@ const Home = () => {
         </div>
       </section>
 
-      {/* Premiere Section - Like Real BMS */}
+      {/* Premiere Section */}
       <section className="max-w-7xl mx-auto px-4 py-6">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">
@@ -257,7 +404,7 @@ const Home = () => {
         </div>
       </section>
 
-      {/* Buzz Section - News/Latest Updates like Real BMS */}
+      {/* Buzz Section */}
       <section className="max-w-7xl mx-auto px-4 py-6">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">
@@ -307,7 +454,7 @@ const Home = () => {
         </div>
       </section>
 
-      {/* Popular Events - Real BMS Style with Scroll */}
+      {/* Popular Events */}
       <section className="max-w-7xl mx-auto px-4 py-6">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">
@@ -328,7 +475,7 @@ const Home = () => {
 
         <div className="relative group">
           <button 
-            onClick={() => scroll('left')}
+            onClick={() => scroll('left', scrollRef)}
             className="absolute left-0 top-0 bottom-4 w-12 bg-gradient-to-r from-[#1A1A1A] to-transparent z-10 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
           >
             <div className="w-8 h-8 bg-black/70 rounded-full flex items-center justify-center text-white hover:bg-[#FF0040]">
@@ -336,7 +483,7 @@ const Home = () => {
             </div>
           </button>
           <button 
-            onClick={() => scroll('right')}
+            onClick={() => scroll('right', scrollRef)}
             className="absolute right-0 top-0 bottom-4 w-12 bg-gradient-to-l from-[#1A1A1A] to-transparent z-10 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
           >
             <div className="w-8 h-8 bg-black/70 rounded-full flex items-center justify-center text-white hover:bg-[#FF0040]">
@@ -352,7 +499,7 @@ const Home = () => {
         </div>
       </section>
 
-      {/* Explore Section - Real BMS Style */}
+      {/* Explore Section */}
       <section className="max-w-7xl mx-auto px-4 py-6">
         <div className="flex items-center gap-3 mb-6">
           <div className="w-1 h-8 bg-[#3498DB] rounded-full" />
@@ -368,13 +515,13 @@ const Home = () => {
             { name: 'Events', icon: '🎭', path: '/events', count: '200+' },
             { name: 'Sports', icon: '⚽', path: '/sports', count: '50+' },
             { name: 'Plays', icon: '🎪', path: '/plays', count: '100+' },
-            { name: 'Activities', icon: '🎯', path: '/movies', count: '80+' },
-            { name: 'Buzz', icon: '📰', path: '/movies', count: 'Latest' },
+            { name: 'Activities', icon: '🎯', path: '/activities', count: '80+' },
+            { name: 'Stream', icon: '📺', path: '/stream', count: 'Latest' },
           ].map((item) => (
             <Link
               key={item.name}
               to={item.path}
-              className="bg-[#1F1F1F] rounded-xl p-5 text-center group hover:bg-[#2A2A2A] transition-colors border border-gray-800 hover:border-[#FF0040]"
+              className="bg-[#1F1F1F] rounded-xl p-5 text-center group hover:bg-[#2A2A2A] transition-colors border border-gray-800 hover:border-[#FF0040] transform hover:scale-105"
             >
               <span className="text-3xl mb-2 block group-hover:scale-110 transition-transform">{item.icon}</span>
               <h3 className="text-white font-semibold text-sm group-hover:text-[#FF0040] transition-colors">{item.name}</h3>
@@ -435,6 +582,40 @@ const Home = () => {
               </div>
             </div>
           ))}
+        </div>
+      </section>
+
+      {/* Newsletter Subscription */}
+      <section className="max-w-7xl mx-auto px-4 py-8 mb-8">
+        <div className="bg-gradient-to-r from-[#FF0040] to-[#FF6B35] rounded-2xl p-8 md:p-12 text-center relative overflow-hidden">
+          <div className="absolute inset-0 opacity-10">
+            <div className="absolute top-0 left-0 w-32 h-32 bg-white rounded-full blur-3xl" />
+            <div className="absolute bottom-0 right-0 w-40 h-40 bg-white rounded-full blur-3xl" />
+          </div>
+          <div className="relative">
+            <div className="flex justify-center mb-4">
+              <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center">
+                <Mail className="w-8 h-8 text-white" />
+              </div>
+            </div>
+            <h2 className="text-2xl md:text-3xl font-bold text-white mb-3">Stay Updated!</h2>
+            <p className="text-white/90 mb-6 max-w-xl mx-auto">Subscribe to our newsletter and get exclusive deals on movies, events, and sports tickets delivered to your inbox.</p>
+            <form onSubmit={handleNewsletterSubmit} className="flex flex-col sm:flex-row gap-3 max-w-md mx-auto">
+              <input 
+                type="email" 
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="Enter your email" 
+                required
+                className="flex-1 px-4 py-3 rounded-lg text-gray-800 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-white"
+              />
+              <button type="submit" className="px-6 py-3 bg-white text-[#FF0040] font-semibold rounded-lg hover:bg-gray-100 transition-colors flex items-center justify-center gap-2">
+                Subscribe
+                <ArrowRight className="w-4 h-4" />
+              </button>
+            </form>
+            <p className="text-white/70 text-xs mt-3">By subscribing, you agree to receive promotional emails</p>
+          </div>
         </div>
       </section>
     </div>

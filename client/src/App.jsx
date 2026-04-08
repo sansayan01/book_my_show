@@ -14,6 +14,8 @@ import Checkout from './pages/Checkout/Checkout'
 import Payment from './pages/Payment/Payment'
 import Confirmation from './pages/Confirmation/Confirmation'
 import Profile from './pages/Profile/Profile'
+import Stream from './pages/Stream/Stream'
+import Activities from './pages/Activities/Activities'
 import Login from './pages/Login/Login'
 import Register from './pages/Register/Register'
 import MyBookings from './pages/MyBookings/MyBookings'
@@ -48,6 +50,8 @@ function App() {
                 <Route path="/events" element={<Events />} />
                 <Route path="/sports" element={<Sports />} />
                 <Route path="/plays" element={<Plays />} />
+                <Route path="/stream" element={<Stream />} />
+                <Route path="/activities" element={<Activities />} />
                 <Route path="/book/:showId" element={<SeatSelection />} />
                 <Route path="/checkout" element={<Checkout />} />
                 <Route path="/payment" element={<Payment />} />

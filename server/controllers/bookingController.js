@@ -3,6 +3,84 @@ const Booking = require('../models/Booking');
 const Show = require('../models/Show');
 const Movie = require('../models/Movie');
 const Cinema = require('../models/Cinema');
+const User = require('../models/User');
+const seatLockService = require('../services/seatLockService');
+const emailService = require('../services/emailService');
+
+// @desc    Lock seats temporarily during checkout
+// @route   POST /api/bookings/lock-seats
+// @access  Private
+exports.lockSeats = async (req, res, next) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({
+        success: false,
+        errors: errors.array()
+      });
+    }
+
+    const { showId, seats, sessionId } = req.body;
+    const userId = req.user?.id;
+
+    // Validate show exists
+    const show = await Show.findById(showId);
+    if (!show) {
+      return res.status(404).json({
+        success: false,
+        message: 'Show not found'
+      });
+    }
+
+    // Check seat availability
+    for (const seat of seats) {
+      const isBooked = show.bookedSeats.some(
+        booked => booked.row === seat.row && booked.number === seat.number
+      );
+      if (isBooked) {
+        return res.status(400).json({
+          success: false,
+          message: `Seat ${seat.row}${seat.number} is already booked`
+        });
+      }
+    }
+
+    // Lock seats using session ID
+    const lockResult = await seatLockService.lockSeats(
+      showId,
+      seats,
+      sessionId || userId,
+      5 * 60 * 1000 // 5 minute lock
+    );
+
+    res.status(200).json({
+      success: true,
+      data: lockResult,
+      message: 'Seats locked successfully'
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    Release locked seats
+// @route   POST /api/bookings/release-seats
+// @access  Private
+exports.releaseSeats = async (req, res, next) => {
+  try {
+    const { showId, sessionId } = req.body;
+    const userId = req.user?.id;
+
+    await seatLockService.releaseSeats(showId, sessionId || userId);
+
+    res.status(200).json({
+      success: true,
+      message: 'Seats released successfully'
+    });
+  } catch (error) {
+    next(error);
+  }
+};
 
 // @desc    Create booking
 // @route   POST /api/bookings
@@ -17,7 +95,7 @@ exports.createBooking = async (req, res, next) => {
       });
     }
 
-    const { showId, seats } = req.body;
+    const { showId, seats, sessionId } = req.body;
 
     // Check if show exists
     const show = await Show.findById(showId)
@@ -39,7 +117,14 @@ exports.createBooking = async (req, res, next) => {
       });
     }
 
-    // Check seat availability
+    // Check if seats are locked (if using session-based locking)
+    const userId = req.user.id;
+    if (sessionId && seatLockService.checkLockedSeats(showId, seats, sessionId)) {
+      // Release the stale locks first
+      await seatLockService.releaseSeats(showId, sessionId);
+    }
+
+    // Check seat availability (double-check)
     for (const seat of seats) {
       const isBooked = show.bookedSeats.some(
         booked => booked.row === seat.row && booked.number === seat.number
@@ -75,7 +160,8 @@ exports.createBooking = async (req, res, next) => {
       totalAmount,
       showDate: show.date,
       showTime: show.time,
-      screenName: show.screen
+      screenName: show.screen,
+      status: 'confirmed'
     });
 
     // Update show with booked seats
@@ -83,6 +169,23 @@ exports.createBooking = async (req, res, next) => {
       $push: { bookedSeats: { $each: seats.map(s => ({ row: s.row, number: s.number })) } },
       $inc: { availableSeats: -seats.length }
     });
+
+    // Release any seat locks
+    if (sessionId) {
+      await seatLockService.releaseSeats(showId, sessionId);
+    }
+
+    // Send confirmation email (async, don't wait)
+    try {
+      const user = await User.findById(req.user.id);
+      if (user && user.email) {
+        emailService.sendBookingConfirmation(booking, user).catch(err => 
+          console.error('Failed to send confirmation email:', err)
+        );
+      }
+    } catch (emailError) {
+      console.error('Email notification error:', emailError);
+    }
 
     res.status(201).json({
       success: true,
@@ -168,12 +271,14 @@ exports.getUserBookings = async (req, res, next) => {
   }
 };
 
-// @desc    Cancel booking
+// @desc    Cancel booking with refund calculation
 // @route   POST /api/bookings/:id/cancel
 // @access  Private
 exports.cancelBooking = async (req, res, next) => {
   try {
-    const booking = await Booking.findById(req.params.id);
+    const booking = await Booking.findById(req.params.id)
+      .populate('movie', 'title')
+      .populate('cinema', 'name');
 
     if (!booking) {
       return res.status(404).json({
@@ -198,20 +303,46 @@ exports.cancelBooking = async (req, res, next) => {
       });
     }
 
-    // Check show time (cannot cancel within 2 hours of show)
+    // Check show time and calculate refund
     const show = await Show.findById(booking.show);
-    const showTime = new Date(show.date);
-    showTime.setHours(parseInt(show.time.split(':')[0]), parseInt(show.time.split(':')[1]));
+    const showDateTime = new Date(show.date);
+    const [hours, minutes] = show.time.split(':').map(Number);
+    showDateTime.setHours(hours, minutes, 0, 0);
     
-    if (showTime.getTime() - Date.now() < 2 * 60 * 60 * 1000) {
+    const hoursUntilShow = (showDateTime.getTime() - Date.now()) / (1000 * 60 * 60);
+    
+    // Refund policy:
+    // - More than 24 hours before show: 100% refund
+    // - 12-24 hours before show: 75% refund
+    // - 2-12 hours before show: 50% refund
+    // - Less than 2 hours: No refund
+    let refundPercentage = 0;
+    let refundMessage = '';
+
+    if (hoursUntilShow >= 24) {
+      refundPercentage = 100;
+      refundMessage = 'Full refund (100%)';
+    } else if (hoursUntilShow >= 12) {
+      refundPercentage = 75;
+      refundMessage = '75% refund (25% cancellation fee)';
+    } else if (hoursUntilShow >= 2) {
+      refundPercentage = 50;
+      refundMessage = '50% refund (50% cancellation fee)';
+    } else {
       return res.status(400).json({
         success: false,
-        message: 'Cannot cancel booking within 2 hours of show'
+        message: 'Cannot cancel booking within 2 hours of show time'
       });
     }
 
+    const refundAmount = (booking.totalAmount * refundPercentage) / 100;
+
     // Update booking status
     booking.status = 'cancelled';
+    booking.paymentStatus = 'refunded';
+    booking.refundAmount = refundAmount;
+    booking.refundPercentage = refundPercentage;
+    booking.cancellationTime = new Date();
     await booking.save();
 
     // Release seats
@@ -220,9 +351,29 @@ exports.cancelBooking = async (req, res, next) => {
       $inc: { availableSeats: booking.seats.length }
     });
 
+    // Send cancellation email (async)
+    try {
+      const user = await User.findById(req.user.id);
+      if (user && user.email) {
+        emailService.sendCancellationEmail(booking, user, refundAmount).catch(err => 
+          console.error('Failed to send cancellation email:', err)
+        );
+      }
+    } catch (emailError) {
+      console.error('Email notification error:', emailError);
+    }
+
     res.status(200).json({
       success: true,
-      data: booking,
+      data: {
+        booking,
+        refund: {
+          amount: refundAmount,
+          percentage: refundPercentage,
+          message: refundMessage,
+          processingTime: '5-7 business days'
+        }
+      },
       message: 'Booking cancelled successfully'
     });
   } catch (error) {
