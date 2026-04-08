@@ -17,14 +17,14 @@ const EventCard = ({ event }) => {
           />
           
           {/* Category Badge */}
-          <div className="absolute top-3 left-3 px-3 py-1 bg-[#F84565] rounded-full text-xs font-medium text-white">
+          <div className="absolute top-3 left-3 px-3 py-1 bg-[#FF0040] rounded-full text-xs font-medium text-white">
             {event.category}
           </div>
         </div>
 
         {/* Info */}
         <div className="p-4">
-          <h3 className="text-white font-semibold text-base truncate group-hover:text-[#F84565] transition-colors">
+          <h3 className="text-white font-semibold text-base truncate group-hover:text-[#FF0040] transition-colors">
             {event.title}
           </h3>
           
@@ -44,10 +44,10 @@ const EventCard = ({ event }) => {
           </div>
 
           <div className="flex items-center justify-between mt-4">
-            <span className="text-[#F84565] font-bold">
+            <span className="text-[#FF0040] font-bold">
               Starting from ₹{event.price}
             </span>
-            <button className="px-4 py-1.5 bg-[#F84565] text-white rounded-lg text-sm font-medium hover:bg-[#d63a54] transition-colors">
+            <button className="px-4 py-1.5 bg-[#FF0040] text-white rounded-lg text-sm font-medium hover:bg-[#d63a54] transition-colors">
               Book Now
             </button>
           </div>
