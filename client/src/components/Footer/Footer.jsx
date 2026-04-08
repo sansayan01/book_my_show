@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { Ticket, Facebook, Twitter, Instagram, Linkedin, Youtube } from 'lucide-react'
+import { Ticket } from 'lucide-react'
 
 const Footer = () => {
   return (
@@ -18,18 +18,10 @@ const Footer = () => {
               India's biggest online ticket booking platform. Book movies, events, sports and more.
             </p>
             <div className="flex gap-4 mt-4">
-              <a href="#" className="p-2 bg-gray-800 text-gray-400 hover:text-white hover:bg-gray-700 rounded-lg transition-colors">
-                <Facebook className="w-5 h-5" />
-              </a>
-              <a href="#" className="p-2 bg-gray-800 text-gray-400 hover:text-white hover:bg-gray-700 rounded-lg transition-colors">
-                <Twitter className="w-5 h-5" />
-              </a>
-              <a href="#" className="p-2 bg-gray-800 text-gray-400 hover:text-white hover:bg-gray-700 rounded-lg transition-colors">
-                <Instagram className="w-5 h-5" />
-              </a>
-              <a href="#" className="p-2 bg-gray-800 text-gray-400 hover:text-white hover:bg-gray-700 rounded-lg transition-colors">
-                <Youtube className="w-5 h-5" />
-              </a>
+              <a href="#" className="p-2 bg-gray-800 text-gray-400 hover:text-white hover:bg-gray-700 rounded-lg transition-colors text-xs font-bold">f</a>
+              <a href="#" className="p-2 bg-gray-800 text-gray-400 hover:text-white hover:bg-gray-700 rounded-lg transition-colors text-xs font-bold">𝕏</a>
+              <a href="#" className="p-2 bg-gray-800 text-gray-400 hover:text-white hover:bg-gray-700 rounded-lg transition-colors text-xs font-bold">📷</a>
+              <a href="#" className="p-2 bg-gray-800 text-gray-400 hover:text-white hover:bg-gray-700 rounded-lg transition-colors text-xs font-bold">▶</a>
             </div>
           </div>
 
