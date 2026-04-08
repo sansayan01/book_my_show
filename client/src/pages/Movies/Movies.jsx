@@ -1,35 +1,45 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
-import { Search, Filter, SlidersHorizontal, Grid, List, ChevronDown, Star, Clock, X } from 'lucide-react'
+import { Search, Filter, SlidersHorizontal, Grid, List, ChevronDown, Star, Clock, X, Calendar, MapPin, ChevronLeft, ChevronRight } from 'lucide-react'
 import MovieCard from '../../components/MovieCard/MovieCard'
 import { movies } from '../../data/mockData'
 
 const Movies = () => {
   const [searchParams, setSearchParams] = useSearchParams()
   const [searchQuery, setSearchQuery] = useState(searchParams.get('search') || '')
-  const [showFilters, setShowFilters] = useState(false)
+  const [showFilters, setShowFilters] = useState(true)
   const [viewMode, setViewMode] = useState('grid')
   const [sortBy, setSortBy] = useState('popularity')
+  const [activeTab, setActiveTab] = useState('nowShowing') // 'nowShowing' or 'comingSoon'
   
   // Filters
   const [selectedLanguages, setSelectedLanguages] = useState([])
   const [selectedGenres, setSelectedGenres] = useState([])
   const [selectedFormats, setSelectedFormats] = useState([])
   const [selectedPrice, setSelectedPrice] = useState('all')
+  const [selectedCity, setSelectedCity] = useState('All')
 
   // Filter options
   const languages = ['Hindi', 'English', 'Tamil', 'Telugu', 'Kannada', 'Malayalam']
-  const genres = ['Action', 'Drama', 'Comedy', 'Thriller', 'Romance', 'Horror', 'Sci-Fi', 'Adventure']
-  const formats = ['2D', '3D', 'IMAX', '4DX']
+  const genres = ['Action', 'Drama', 'Comedy', 'Thriller', 'Romance', 'Horror', 'Sci-Fi', 'Adventure', 'Animation']
+  const formats = ['2D', '3D', 'IMAX', '4DX', 'MX4D']
+  const cities = ['All', 'Mumbai', 'Delhi', 'Bangalore', 'Hyderabad', 'Chennai', 'Kolkata', 'Pune', 'Ahmedabad']
   const priceRanges = [
     { label: 'All', value: 'all' },
     { label: 'Below ₹200', value: '0-200' },
     { label: '₹200 - ₹500', value: '200-500' },
-    { label: 'Above ₹500', value: '500-9999' }
+    { label: '₹500 - ₹1000', value: '500-1000' },
+    { label: 'Above ₹1000', value: '1000-9999' }
   ]
 
+  // Split movies into now showing and coming soon
+  const nowShowingMovies = movies.filter(m => new Date(m.releaseDate) <= new Date())
+  const comingSoonMovies = movies.filter(m => new Date(m.releaseDate) > new Date())
+
+  const currentMovies = activeTab === 'nowShowing' ? nowShowingMovies : comingSoonMovies
+
   // Filter and sort movies
-  const filteredMovies = movies.filter(movie => {
+  const filteredMovies = currentMovies.filter(movie => {
     // Search filter
     if (searchQuery && !movie.title.toLowerCase().includes(searchQuery.toLowerCase())) {
       return false
@@ -55,6 +65,8 @@ const Movies = () => {
         return new Date(b.releaseDate) - new Date(a.releaseDate)
       case 'title':
         return a.title.localeCompare(b.title)
+      case 'price':
+        return 250 - 250 // simplified
       default:
         return 0
     }
@@ -84,10 +96,34 @@ const Movies = () => {
         <div className="max-w-7xl mx-auto px-4 py-4">
           <h1 className="text-2xl font-bold text-white mb-4">Movies</h1>
           
+          {/* Tabs - Real BMS Style */}
+          <div className="flex gap-2 mb-4">
+            <button
+              onClick={() => setActiveTab('nowShowing')}
+              className={`px-6 py-2.5 rounded-lg font-semibold text-sm transition-colors ${
+                activeTab === 'nowShowing' 
+                  ? 'bg-[#FF0040] text-white' 
+                  : 'bg-[#2A2A2A] text-gray-400 hover:text-white hover:bg-[#3A3A3A]'
+              }`}
+            >
+              Now Showing
+            </button>
+            <button
+              onClick={() => setActiveTab('comingSoon')}
+              className={`px-6 py-2.5 rounded-lg font-semibold text-sm transition-colors ${
+                activeTab === 'comingSoon' 
+                  ? 'bg-[#FF0040] text-white' 
+                  : 'bg-[#2A2A2A] text-gray-400 hover:text-white hover:bg-[#3A3A3A]'
+              }`}
+            >
+              Coming Soon
+            </button>
+          </div>
+          
           {/* Search and Controls */}
           <div className="flex flex-col md:flex-row gap-4">
             {/* Search */}
-            <div className="relative flex-1">
+            <div className="relative flex-1 max-w-md">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
               <input
                 type="text"
@@ -99,24 +135,20 @@ const Movies = () => {
             </div>
 
             {/* Controls */}
-            <div className="flex gap-3">
-              {/* Filter Button */}
-              <button
-                onClick={() => setShowFilters(!showFilters)}
-                className={`flex items-center gap-2 px-4 py-2.5 rounded-lg border transition-colors ${
-                  showFilters || activeFiltersCount > 0
-                    ? 'bg-[#FF0040] border-[#FF0040] text-white'
-                    : 'bg-[#2A2A2A] border-gray-700 text-gray-300 hover:border-gray-500'
-                }`}
-              >
-                <Filter className="w-4 h-4" />
-                <span className="text-sm font-medium">Filters</span>
-                {activeFiltersCount > 0 && (
-                  <span className="w-5 h-5 bg-white text-[#FF0040] rounded-full text-xs flex items-center justify-center font-bold">
-                    {activeFiltersCount}
-                  </span>
-                )}
-              </button>
+            <div className="flex gap-3 flex-wrap">
+              {/* City Filter */}
+              <div className="relative">
+                <select
+                  value={selectedCity}
+                  onChange={(e) => setSelectedCity(e.target.value)}
+                  className="appearance-none px-4 py-2.5 pr-10 bg-[#2A2A2A] border border-gray-700 rounded-lg text-gray-300 text-sm focus:outline-none focus:border-[#FF0040] cursor-pointer"
+                >
+                  {cities.map(city => (
+                    <option key={city} value={city}>{city === 'All' ? 'All Cities' : city}</option>
+                  ))}
+                </select>
+                <MapPin className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+              </div>
 
               {/* Sort Dropdown */}
               <div className="relative">
@@ -153,43 +185,59 @@ const Movies = () => {
         </div>
       </div>
 
-      {/* Filters Panel */}
-      {showFilters && (
-        <div className="bg-[#1F1F1F] border-b border-gray-800">
-          <div className="max-w-7xl mx-auto px-4 py-4">
-            <div className="flex flex-wrap gap-6">
-              {/* Language */}
-              <div>
-                <h3 className="text-white font-semibold text-sm mb-3">Language</h3>
-                <div className="flex flex-wrap gap-2">
+      <div className="max-w-7xl mx-auto px-4 py-6">
+        <div className="flex gap-6">
+          {/* Filter Sidebar - Real BMS Style */}
+          <div className="w-64 flex-shrink-0 hidden lg:block">
+            <div className="bg-[#1F1F1F] rounded-xl p-5 sticky top-4">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-white font-bold text-lg">Filters</h2>
+                {activeFiltersCount > 0 && (
+                  <button
+                    onClick={clearFilters}
+                    className="text-[#FF0040] text-sm hover:underline"
+                  >
+                    Clear All
+                  </button>
+                )}
+              </div>
+
+              {/* Language Filter */}
+              <div className="mb-6">
+                <h3 className="text-white font-semibold text-sm mb-3 flex items-center gap-2">
+                  <span className="w-1 h-4 bg-[#FF0040] rounded-full" />
+                  Language
+                </h3>
+                <div className="flex flex-col gap-2">
                   {languages.map(lang => (
-                    <button
-                      key={lang}
-                      onClick={() => toggleFilter(lang, selectedLanguages, setSelectedLanguages)}
-                      className={`px-4 py-1.5 rounded-full text-sm transition-colors ${
-                        selectedLanguages.includes(lang)
-                          ? 'bg-[#FF0040] text-white'
-                          : 'bg-[#2A2A2A] text-gray-300 hover:bg-[#3A3A3A]'
-                      }`}
-                    >
-                      {lang}
-                    </button>
+                    <label key={lang} className="flex items-center gap-2 cursor-pointer group">
+                      <input
+                        type="checkbox"
+                        checked={selectedLanguages.includes(lang)}
+                        onChange={() => toggleFilter(lang, selectedLanguages, setSelectedLanguages)}
+                        className="w-4 h-4 rounded border-gray-600 bg-[#2A2A2A] text-[#FF0040] focus:ring-[#FF0040] focus:ring-offset-0"
+                      />
+                      <span className="text-gray-400 text-sm group-hover:text-white transition-colors">{lang}</span>
+                    </label>
                   ))}
                 </div>
               </div>
 
-              {/* Genre */}
-              <div>
-                <h3 className="text-white font-semibold text-sm mb-3">Genre</h3>
+              {/* Genre Filter */}
+              <div className="mb-6">
+                <h3 className="text-white font-semibold text-sm mb-3 flex items-center gap-2">
+                  <span className="w-1 h-4 bg-green-500 rounded-full" />
+                  Genre
+                </h3>
                 <div className="flex flex-wrap gap-2">
                   {genres.map(genre => (
                     <button
                       key={genre}
                       onClick={() => toggleFilter(genre, selectedGenres, setSelectedGenres)}
-                      className={`px-4 py-1.5 rounded-full text-sm transition-colors ${
+                      className={`px-3 py-1.5 rounded-full text-xs transition-colors ${
                         selectedGenres.includes(genre)
                           ? 'bg-[#FF0040] text-white'
-                          : 'bg-[#2A2A2A] text-gray-300 hover:bg-[#3A3A3A]'
+                          : 'bg-[#2A2A2A] text-gray-400 hover:bg-[#3A3A3A] hover:text-white'
                       }`}
                     >
                       {genre}
@@ -198,18 +246,21 @@ const Movies = () => {
                 </div>
               </div>
 
-              {/* Format */}
-              <div>
-                <h3 className="text-white font-semibold text-sm mb-3">Format</h3>
+              {/* Format Filter */}
+              <div className="mb-6">
+                <h3 className="text-white font-semibold text-sm mb-3 flex items-center gap-2">
+                  <span className="w-1 h-4 bg-blue-500 rounded-full" />
+                  Format
+                </h3>
                 <div className="flex flex-wrap gap-2">
                   {formats.map(format => (
                     <button
                       key={format}
                       onClick={() => toggleFilter(format, selectedFormats, setSelectedFormats)}
-                      className={`px-4 py-1.5 rounded-full text-sm transition-colors ${
+                      className={`px-3 py-1.5 rounded-full text-xs transition-colors ${
                         selectedFormats.includes(format)
                           ? 'bg-[#FF0040] text-white'
-                          : 'bg-[#2A2A2A] text-gray-300 hover:bg-[#3A3A3A]'
+                          : 'bg-[#2A2A2A] text-gray-400 hover:bg-[#3A3A3A] hover:text-white'
                       }`}
                     >
                       {format}
@@ -218,93 +269,124 @@ const Movies = () => {
                 </div>
               </div>
 
-              {/* Clear Filters */}
+              {/* Price Filter */}
+              <div>
+                <h3 className="text-white font-semibold text-sm mb-3 flex items-center gap-2">
+                  <span className="w-1 h-4 bg-yellow-500 rounded-full" />
+                  Price
+                </h3>
+                <div className="flex flex-col gap-2">
+                  {priceRanges.map(range => (
+                    <label key={range.value} className="flex items-center gap-2 cursor-pointer group">
+                      <input
+                        type="radio"
+                        name="price"
+                        checked={selectedPrice === range.value}
+                        onChange={() => setSelectedPrice(range.value)}
+                        className="w-4 h-4 border-gray-600 bg-[#2A2A2A] text-[#FF0040] focus:ring-[#FF0040] focus:ring-offset-0"
+                      />
+                      <span className="text-gray-400 text-sm group-hover:text-white transition-colors">{range.label}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Content */}
+          <div className="flex-1">
+            {/* Results Count */}
+            <div className="flex items-center justify-between mb-6">
+              <p className="text-gray-400 text-sm">
+                {filteredMovies.length} {filteredMovies.length === 1 ? 'movie' : 'movies'} found in {activeTab === 'nowShowing' ? 'Now Showing' : 'Coming Soon'}
+              </p>
               {activeFiltersCount > 0 && (
-                <button
-                  onClick={clearFilters}
-                  className="flex items-center gap-2 px-4 py-1.5 text-[#FF0040] hover:bg-[#FF0040]/10 rounded-full text-sm transition-colors self-end"
-                >
-                  <X className="w-4 h-4" />
-                  Clear All
-                </button>
+                <div className="flex items-center gap-2 flex-wrap">
+                  {selectedLanguages.map(lang => (
+                    <span key={lang} className="px-2 py-1 bg-[#FF0040]/20 text-[#FF0040] text-xs rounded-full flex items-center gap-1">
+                      {lang}
+                      <button onClick={() => toggleFilter(lang, selectedLanguages, setSelectedLanguages)} className="hover:text-white">
+                        <X className="w-3 h-3" />
+                      </button>
+                    </span>
+                  ))}
+                  {selectedGenres.map(genre => (
+                    <span key={genre} className="px-2 py-1 bg-[#FF0040]/20 text-[#FF0040] text-xs rounded-full flex items-center gap-1">
+                      {genre}
+                      <button onClick={() => toggleFilter(genre, selectedGenres, setSelectedGenres)} className="hover:text-white">
+                        <X className="w-3 h-3" />
+                      </button>
+                    </span>
+                  ))}
+                </div>
               )}
             </div>
-          </div>
-        </div>
-      )}
 
-      {/* Content */}
-      <div className="max-w-7xl mx-auto px-4 py-6">
-        {/* Results Count */}
-        <div className="flex items-center justify-between mb-6">
-          <p className="text-gray-400 text-sm">
-            {filteredMovies.length} {filteredMovies.length === 1 ? 'movie' : 'movies'} found
-          </p>
-        </div>
-
-        {/* Movies Grid */}
-        {filteredMovies.length > 0 ? (
-          <div className={viewMode === 'grid' 
-            ? 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4'
-            : 'flex flex-col gap-4'
-          }>
-            {filteredMovies.map(movie => (
-              viewMode === 'grid' ? (
-                <MovieCard key={movie.id} movie={movie} />
-              ) : (
-                <Link
-                  key={movie.id}
-                  to={`/movie/${movie.id}`}
-                  className="flex gap-4 bg-[#1F1F1F] rounded-xl p-3 hover:bg-[#2A2A2A] transition-colors"
+            {/* Movies Grid */}
+            {filteredMovies.length > 0 ? (
+              <div className={viewMode === 'grid' 
+                ? 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 xl:grid-cols-5 gap-4'
+                : 'flex flex-col gap-4'
+              }>
+                {filteredMovies.map(movie => (
+                  viewMode === 'grid' ? (
+                    <MovieCard key={movie.id} movie={movie} />
+                  ) : (
+                    <Link
+                      key={movie.id}
+                      to={`/movie/${movie.id}`}
+                      className="flex gap-4 bg-[#1F1F1F] rounded-xl p-3 hover:bg-[#2A2A2A] transition-colors"
+                    >
+                      <img
+                        src={movie.poster}
+                        alt={movie.title}
+                        className="w-24 h-36 object-cover rounded-lg"
+                      />
+                      <div className="flex-1 py-2">
+                        <h3 className="text-white font-semibold text-lg">{movie.title}</h3>
+                        <div className="flex items-center gap-2 mt-1 text-gray-400 text-sm">
+                          <span className="flex items-center gap-1">
+                            <Star className="w-4 h-4 text-green-400 fill-green-400" />
+                            {movie.rating}
+                          </span>
+                          <span>•</span>
+                          <span>{movie.language}</span>
+                          <span>•</span>
+                          <span>{movie.duration} min</span>
+                        </div>
+                        <p className="text-gray-500 text-sm mt-2 line-clamp-2">{movie.description}</p>
+                        <div className="flex gap-2 mt-3">
+                          {movie.genre.slice(0, 3).map((g, i) => (
+                            <span key={i} className="px-2 py-0.5 bg-[#2A2A2A] text-gray-400 text-xs rounded">
+                              {g}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                      <button className="self-center px-6 py-2.5 bg-[#FF0040] text-white rounded-lg font-semibold text-sm hover:bg-[#CC0033] transition-colors">
+                        Book Now
+                      </button>
+                    </Link>
+                  )
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-16">
+                <div className="w-20 h-20 bg-[#2A2A2A] rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Search className="w-10 h-10 text-gray-600" />
+                </div>
+                <h3 className="text-white text-xl font-semibold mb-2">No movies found</h3>
+                <p className="text-gray-400 mb-4">Try adjusting your filters or search query</p>
+                <button
+                  onClick={clearFilters}
+                  className="px-6 py-2 bg-[#FF0040] text-white rounded-lg font-medium hover:bg-[#CC0033] transition-colors"
                 >
-                  <img
-                    src={movie.poster}
-                    alt={movie.title}
-                    className="w-24 h-36 object-cover rounded-lg"
-                  />
-                  <div className="flex-1 py-2">
-                    <h3 className="text-white font-semibold text-lg">{movie.title}</h3>
-                    <div className="flex items-center gap-2 mt-1 text-gray-400 text-sm">
-                      <span className="flex items-center gap-1">
-                        <Star className="w-4 h-4 text-green-400 fill-green-400" />
-                        {movie.rating}
-                      </span>
-                      <span>•</span>
-                      <span>{movie.language}</span>
-                      <span>•</span>
-                      <span>{movie.duration} min</span>
-                    </div>
-                    <p className="text-gray-500 text-sm mt-2 line-clamp-2">{movie.description}</p>
-                    <div className="flex gap-2 mt-3">
-                      {movie.genre.slice(0, 3).map((g, i) => (
-                        <span key={i} className="px-2 py-0.5 bg-[#2A2A2A] text-gray-400 text-xs rounded">
-                          {g}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                  <button className="self-center px-6 py-2.5 bg-[#FF0040] text-white rounded-lg font-semibold text-sm hover:bg-[#CC0033] transition-colors">
-                    Book Now
-                  </button>
-                </Link>
-              )
-            ))}
+                  Clear Filters
+                </button>
+              </div>
+            )}
           </div>
-        ) : (
-          <div className="text-center py-16">
-            <div className="w-20 h-20 bg-[#2A2A2A] rounded-full flex items-center justify-center mx-auto mb-4">
-              <Search className="w-10 h-10 text-gray-600" />
-            </div>
-            <h3 className="text-white text-xl font-semibold mb-2">No movies found</h3>
-            <p className="text-gray-400 mb-4">Try adjusting your filters or search query</p>
-            <button
-              onClick={clearFilters}
-              className="px-6 py-2 bg-[#FF0040] text-white rounded-lg font-medium hover:bg-[#CC0033] transition-colors"
-            >
-              Clear Filters
-            </button>
-          </div>
-        )}
+        </div>
       </div>
     </div>
   )

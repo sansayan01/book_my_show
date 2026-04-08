@@ -212,3 +212,12 @@ a:hover {
   background: var(--primary-dark);
   transform: scale(1.05);
 }
+
+/* Scrollbar hide utility */
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}

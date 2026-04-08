@@ -7,17 +7,17 @@ const path = require('path');
 dotenv.config();
 
 // Connect to database
-const connectDB = require('./config/db');
+const connectDB = require('../config/db');
 
 // Route files
-const authRoutes = require('./routes/auth');
-const movieRoutes = require('./routes/movies');
-const cinemaRoutes = require('./routes/cinemas');
-const showRoutes = require('./routes/shows');
-const bookingRoutes = require('./routes/bookings');
+const authRoutes = require('../routes/auth');
+const movieRoutes = require('../routes/movies');
+const cinemaRoutes = require('../routes/cinemas');
+const showRoutes = require('../routes/shows');
+const bookingRoutes = require('../routes/bookings');
 
 // Error handler
-const errorHandler = require('./middleware/errorHandler');
+const errorHandler = require('../middleware/errorHandler');
 
 // Initialize express
 const app = express();

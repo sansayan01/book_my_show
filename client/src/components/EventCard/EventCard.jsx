@@ -1,58 +1,57 @@
 import { Link } from 'react-router-dom'
-import { Calendar, MapPin } from 'lucide-react'
+import { Calendar, MapPin, Clock } from 'lucide-react'
 
 const EventCard = ({ event }) => {
   return (
     <Link 
-      to={`/event/${event.id}`}
-      className="group flex-shrink-0 w-[280px] sm:w-[300px] transition-transform hover:scale-105 duration-300"
+      to={`/events/${event.id}`} 
+      className="flex-shrink-0 w-44 group"
     >
-      <div className="bg-[#2A2A2A] rounded-xl overflow-hidden">
-        {/* Poster */}
-        <div className="relative h-[160px]">
-          <img 
-            src={event.poster} 
-            alt={event.title}
-            className="w-full h-full object-cover"
-          />
-          
-          {/* Category Badge */}
-          <div className="absolute top-3 left-3 px-3 py-1 bg-[#FF0040] rounded-full text-xs font-medium text-white">
+      <div className="relative aspect-[2/3] rounded-xl overflow-hidden bg-[#2A2A2A] mb-3">
+        <img
+          src={event.poster || 'https://images.unsplash.com/photo-1540039155733-5bb30b53aa14?w=300&h=450&fit=crop'}
+          alt={event.title}
+          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
+        
+        {/* Date Badge */}
+        {event.date && (
+          <div className="absolute top-3 left-3 px-3 py-2 bg-[#FF0040] rounded-lg text-center">
+            <div className="text-white font-bold text-lg">{new Date(event.date).getDate()}</div>
+            <div className="text-white text-xs">{new Date(event.date).toLocaleDateString('en-IN', { month: 'short' })}</div>
+          </div>
+        )}
+        
+        {/* Category Badge */}
+        {event.category && (
+          <span className="absolute top-3 right-3 px-2 py-1 bg-black/60 text-white text-xs rounded">
             {event.category}
-          </div>
-        </div>
+          </span>
+        )}
 
-        {/* Info */}
-        <div className="p-4">
-          <h3 className="text-white font-semibold text-base truncate group-hover:text-[#FF0040] transition-colors">
-            {event.title}
-          </h3>
-          
-          <div className="flex items-center gap-2 mt-3 text-gray-400 text-sm">
-            <Calendar className="w-4 h-4 flex-shrink-0" />
-            <span className="truncate">{new Date(event.date).toLocaleDateString('en-IN', { 
-              weekday: 'short', 
-              month: 'short', 
-              day: 'numeric',
-              year: 'numeric'
-            })}</span>
-          </div>
-          
-          <div className="flex items-center gap-2 mt-2 text-gray-400 text-sm">
-            <MapPin className="w-4 h-4 flex-shrink-0" />
-            <span className="truncate">{event.venue}</span>
-          </div>
-
-          <div className="flex items-center justify-between mt-4">
-            <span className="text-[#FF0040] font-bold">
-              Starting from ₹{event.price}
-            </span>
-            <button className="px-4 py-1.5 bg-[#FF0040] text-white rounded-lg text-sm font-medium hover:bg-[#d63a54] transition-colors">
-              Book Now
-            </button>
-          </div>
+        {/* Book Button on Hover */}
+        <div className="absolute inset-x-0 bottom-0 p-3 opacity-0 group-hover:opacity-100 transition-opacity">
+          <button className="w-full py-2 bg-[#FF0040] text-white rounded-lg font-semibold text-sm">
+            Book Now
+          </button>
         </div>
       </div>
+
+      <h3 className="text-white font-semibold text-sm truncate group-hover:text-[#FF0040] transition-colors">
+        {event.title}
+      </h3>
+      <div className="flex items-center gap-1 text-gray-500 text-xs mt-1">
+        <Calendar className="w-3 h-3" />
+        <span>{event.date ? new Date(event.date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }) : 'TBA'}</span>
+      </div>
+      <div className="flex items-center gap-1 text-gray-500 text-xs mt-1">
+        <MapPin className="w-3 h-3" />
+        <span className="truncate">{event.venue || 'TBA'}</span>
+      </div>
+      {event.price && (
+        <p className="text-[#FF0040] text-sm font-bold mt-1">₹{event.price}</p>
+      )}
     </Link>
   )
 }
