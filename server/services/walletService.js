@@ -2,7 +2,6 @@
  * Wallet Service
  */
 const Wallet = require('../models/Wallet');
-const Transaction = require('../models/Wallet').schema.virtual('transactions').get ? Wallet : null;
 const notificationService = require('./notificationService');
 
 class WalletService {

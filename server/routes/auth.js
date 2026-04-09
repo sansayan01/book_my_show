@@ -13,7 +13,7 @@ const {
   socialLogin,
   socialRegister
 } = require('../controllers/authController');
-const { validate, schemas } = require('../validators');
+const { validate, schemas } = require('../utils/validationSchemas');
 
 const router = express.Router();
 

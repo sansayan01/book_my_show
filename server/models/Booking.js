@@ -35,14 +35,14 @@ const bookingSchema = new mongoose.Schema({
   user: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
-    required: true,
-    index: true  // Included in compound indexes
+    required: true
+    // index covered by compound index { user: 1, createdAt: -1 }
   },
   show: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Show',
-    required: true,
-    index: true  // For show-specific queries
+    required: true
+    // index covered by compound index { show: 1, createdAt: -1 }
   },
   movie: {
     type: mongoose.Schema.Types.ObjectId,

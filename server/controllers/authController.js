@@ -42,7 +42,8 @@ exports.socialLogin = async (req, res, next) => {
         name: name || email.split('@')[0],
         email,
         password: randomPassword,
-        isActive: true
+        isActive: true,
+        socialLogin: { provider, providerId: token }
       });
 
       // Check for referral code in header

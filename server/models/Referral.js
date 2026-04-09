@@ -69,7 +69,7 @@ const userReferralCodeSchema = new mongoose.Schema({
 }, { timestamps: true });
 
 userReferralCodeSchema.index({ user: 1 });
-userReferralCodeSchema.index({ code: 1 });
+// code already has unique:true which creates index
 
 const Referral = mongoose.model('Referral', referralSchema);
 const UserReferralCode = mongoose.model('UserReferralCode', userReferralCodeSchema);

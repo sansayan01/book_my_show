@@ -7,7 +7,7 @@ const {
   getTransactions,
   useForBooking
 } = require('../controllers/walletController');
-const { validate, schemas } = require('../validators');
+const { validate, schemas } = require('../utils/validationSchemas');
 
 const router = express.Router();
 

@@ -4,19 +4,19 @@ const showReminderSchema = new mongoose.Schema({
   user: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
-    required: true,
-    index: true
+    required: true
+    // index covered by compound index below
   },
   show: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Show',
-    required: true,
-    index: true
+    required: true
+    // index covered by compound index below
   },
   reminderTime: {
     type: Date,
-    required: true,
-    index: true
+    required: true
+    // indexed by the query index below
   },
   type: {
     type: String,

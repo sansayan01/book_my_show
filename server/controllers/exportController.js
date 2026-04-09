@@ -98,3 +98,5 @@ exports.exportUsers = async (req, res, next) => {
     next(error);
   }
 };
+
+module.exports = exports;

@@ -7,7 +7,7 @@ const {
   getReferrals,
   getShareLink
 } = require('../controllers/referralController');
-const { validate, schemas } = require('../validators');
+const { validate, schemas } = require('../utils/validationSchemas');
 
 const router = express.Router();
 

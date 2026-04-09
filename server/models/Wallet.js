@@ -66,7 +66,7 @@ const walletSchema = new mongoose.Schema({
   timestamps: true
 });
 
-walletSchema.index({ user: 1 });
+// user already has unique:true which creates the index
 walletSchema.index({ 'transactions.createdAt': -1 });
 
 module.exports = mongoose.model('Wallet', walletSchema);
