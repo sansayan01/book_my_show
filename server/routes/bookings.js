@@ -14,6 +14,16 @@ const { validate } = require('../middleware/validate');
 
 const router = express.Router();
 
+/**
+ * @route   /api/v1/bookings
+ * @desc    Booking routes with WebSocket seat updates
+ * @access  Private (most endpoints)
+ * @version v1
+ * @note    Uses compound indexes on (user, createdAt) for user bookings
+ *          Uses index on ticketCode for verification
+ *          Uses index on status for admin queries
+ */
+
 // Validation rules for seat locking
 const lockSeatsValidation = [
   body('showId').notEmpty().withMessage('Show ID is required'),

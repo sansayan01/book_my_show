@@ -1,15 +1,48 @@
 const mongoose = require('mongoose');
 
+/**
+ * Booking Schema - Movie ticket bookings
+ * 
+ * DATABASE INDEXING STRATEGY:
+ * 
+ * 1. Primary Query Pattern: Get user's booking history (paginated)
+ *    Index: { user: 1, createdAt: -1 }
+ *    - Used for: User dashboard, booking history
+ *    - Type: Compound index (descending for recent first)
+ * 
+ * 2. Secondary Query Pattern: Verify booking by ticket code
+ *    Index: { ticketCode: 1 } (unique)
+ *    - Used for: QR code verification at venue
+ *    - Type: Unique index
+ * 
+ * 3. Tertiary Query Pattern: Find bookings by status
+ *    Index: { status: 1 }
+ *    - Used for: Admin dashboards, reporting
+ *    - Type: Single field index
+ * 
+ * 4. Additional Query Pattern: Find bookings by show
+ *    Index: { show: 1, createdAt: -1 }
+ *    - Used for: Show-specific reports, analytics
+ * 
+ * QUERY OPTIMIZATION HINTS:
+ * - Always include user ID in queries (security + performance)
+ * - Use projection to limit fields when full doc not needed
+ * - For analytics, use aggregation with $match first
+ * - Consider covering indexes for ticket verification queries
+ */
+
 const bookingSchema = new mongoose.Schema({
   user: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
-    required: true
+    required: true,
+    index: true  // Included in compound indexes
   },
   show: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Show',
-    required: true
+    required: true,
+    index: true  // For show-specific queries
   },
   movie: {
     type: mongoose.Schema.Types.ObjectId,
@@ -42,11 +75,12 @@ const bookingSchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    enum: ['pending', 'confirmed', 'cancelled', 'completed'],
+    enum: ['pending', 'confirmed', 'cancelled', 'completed', 'expired'],
     default: 'pending'
   },
   paymentId: {
-    type: String
+    type: String,
+    sparse: true  // Sparse index for optional field
   },
   paymentMethod: {
     type: String,
@@ -73,10 +107,42 @@ const bookingSchema = new mongoose.Schema({
   screenName: {
     type: String,
     required: true
+  },
+  // Refund tracking
+  refundAmount: {
+    type: Number
+  },
+  refundPercentage: {
+    type: Number
+  },
+  cancellationTime: {
+    type: Date
   }
 }, {
   timestamps: true
 });
+
+// === DATABASE INDEXES ===
+
+// 1. Primary compound index for user booking history
+// Query: "Get recent bookings for user X"
+bookingSchema.index({ user: 1, createdAt: -1 });
+
+// 2. Status index for admin/reporting queries
+// Query: "Find all cancelled bookings"
+bookingSchema.index({ status: 1 });
+
+// 4. Show-index for analytics and reports
+// Query: "Bookings for show X"
+bookingSchema.index({ show: 1, createdAt: -1 });
+
+// 5. Show date index for date-based reporting
+// Query: "All bookings for today"
+bookingSchema.index({ showDate: 1, createdAt: -1 });
+
+// 6. Partial index for expired bookings cleanup (handled by cron)
+// Query: "Find expired pending bookings older than 30 min"
+// Note: Implemented in application code via cron job
 
 // Generate ticket code before saving
 bookingSchema.pre('save', async function(next) {
@@ -87,9 +153,5 @@ bookingSchema.pre('save', async function(next) {
   }
   next();
 });
-
-bookingSchema.index({ user: 1, createdAt: -1 });
-bookingSchema.index({ ticketCode: 1 });
-bookingSchema.index({ status: 1 });
 
 module.exports = mongoose.model('Booking', bookingSchema);

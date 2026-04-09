@@ -15,12 +15,20 @@ const {
 
 const router = express.Router();
 
+/**
+ * @route   /api/v1/movies
+ * @desc    Movie routes with caching support
+ * @access  Public/Private
+ * @version v1
+ */
+
 // Validation for reviews
 const reviewValidation = [
   body('rating').isInt({ min: 1, max: 10 }).withMessage('Rating must be between 1 and 10'),
   body('review').optional().isLength({ max: 1000 }).withMessage('Review cannot exceed 1000 characters')
 ];
 
+// Query optimization: Use index on featured, upcoming, and use pagination
 router.get('/featured', getFeaturedMovies);
 router.get('/upcoming', getUpcomingMovies);
 router.get('/slug/:slug', getMovieBySlug);
