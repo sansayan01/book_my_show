@@ -18,6 +18,8 @@ const cinemaRoutes = require('../routes/cinemas');
 const showRoutes = require('../routes/shows');
 const bookingRoutes = require('../routes/bookings');
 const analyticsRoutes = require('../routes/analytics');
+const paymentRoutes = require('../routes/payments');
+const adminRoutes = require('../routes/admin');
 
 // Swagger documentation
 const setupSwagger = require('../config/swagger');
@@ -84,17 +86,51 @@ app.use('/api/cinemas', cinemaRoutes);
 app.use('/api/shows', showRoutes);
 app.use('/api/bookings', bookingRoutes);
 app.use('/api/analytics', analyticsRoutes);
+app.use('/api/payments', paymentRoutes);
+app.use('/api/admin', adminRoutes);
 
 // Setup Swagger documentation
 setupSwagger(app);
 
-// Health check endpoint
-app.get('/api/health', (req, res) => {
-  res.status(200).json({
-    success: true,
-    message: 'API is running',
-    timestamp: new Date().toISOString()
-  });
+// Health check endpoint with dependency status
+app.get('/api/health', async (req, res) => {
+  try {
+    // Check MongoDB connection
+    const mongoose = require('mongoose');
+    const dbState = mongoose.connection.readyState;
+    const dbStatus = dbState === 1 ? 'connected' : dbState === 0 ? 'disconnected' : 'connecting';
+    
+    // Check memory usage
+    const memoryUsage = process.memoryUsage();
+    const heapUsedPercent = Math.round((memoryUsage.heapUsed / memoryUsage.heapTotal) * 100);
+    
+    const health = {
+      success: true,
+      message: 'API is running',
+      timestamp: new Date().toISOString(),
+      uptime: process.uptime(),
+      dependencies: {
+        database: {
+          status: dbStatus,
+          name: 'MongoDB'
+        },
+        memory: {
+          status: heapUsedPercent < 90 ? 'healthy' : 'warning',
+          heapUsed: `${Math.round(memoryUsage.heapUsed / 1024 / 1024)}MB`,
+          heapTotal: `${Math.round(memoryUsage.heapTotal / 1024 / 1024)}MB`,
+          heapPercent: `${heapUsedPercent}%`
+        }
+      }
+    };
+    
+    res.status(200).json(health);
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Health check failed',
+      error: error.message
+    });
+  }
 });
 
 // 404 handler

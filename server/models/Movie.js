@@ -75,6 +75,41 @@ const movieSchema = new mongoose.Schema({
   },
   officialWebsite: {
     type: String
+  },
+  reviews: [{
+    user: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      required: true
+    },
+    rating: {
+      type: Number,
+      required: true,
+      min: 1,
+      max: 10
+    },
+    review: {
+      type: String,
+      maxlength: [1000, 'Review cannot exceed 1000 characters']
+    },
+    isVerified: {
+      type: Boolean,
+      default: false
+    },
+    createdAt: {
+      type: Date,
+      default: Date.now
+    }
+  }],
+  averageRating: {
+    type: Number,
+    min: 0,
+    max: 10,
+    default: 0
+  },
+  reviewCount: {
+    type: Number,
+    default: 0
   }
 }, {
   timestamps: true

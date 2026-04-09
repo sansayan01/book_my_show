@@ -121,6 +121,35 @@ class EmailService {
 
     return this.send(user.email, subject, html);
   }
+
+  /**
+   * Send password reset email
+   */
+  async sendPasswordResetEmail(user, resetToken) {
+    const resetUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/reset-password/${resetToken}`;
+    const subject = 'Password Reset Request';
+    const html = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h2 style="color: #e5493a;">Reset Your Password</h2>
+        <p>Dear ${user.name},</p>
+        <p>We received a request to reset your password. Click the button below to reset it:</p>
+        
+        <div style="text-align: center; margin: 30px 0;">
+          <a href="${resetUrl}" style="background: #e5493a; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; display: inline-block;">
+            Reset Password
+          </a>
+        </div>
+        
+        <p>This link will expire in 10 minutes.</p>
+        <p>If you didn't request this, please ignore this email.</p>
+        
+        <hr>
+        <p style="color: #666; font-size: 12px;">This is an automated email from BookMyShow.</p>
+      </div>
+    `;
+
+    return this.send(user.email, subject, html);
+  }
 }
 
 // Export singleton instance

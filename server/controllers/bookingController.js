@@ -6,6 +6,8 @@ const Cinema = require('../models/Cinema');
 const User = require('../models/User');
 const seatLockService = require('../services/seatLockService');
 const emailService = require('../services/emailService');
+const paymentService = require('../services/paymentService');
+const qrService = require('../services/qrService');
 
 // @desc    Lock seats temporarily during checkout
 // @route   POST /api/bookings/lock-seats
@@ -150,6 +152,29 @@ exports.createBooking = async (req, res, next) => {
       };
     });
 
+    // Handle payment if paymentId provided
+    let paymentStatus = 'pending';
+    let paymentId = null;
+    
+    if (req.body.paymentId) {
+      // Verify and process payment
+      const isValidPayment = paymentService.verifySignature(
+        req.body.paymentId,
+        req.body.orderId,
+        req.body.signature
+      );
+      
+      if (!isValidPayment) {
+        return res.status(400).json({
+          success: false,
+          message: 'Payment verification failed'
+        });
+      }
+      
+      paymentStatus = 'completed';
+      paymentId = req.body.paymentId;
+    }
+
     // Create booking
     const booking = await Booking.create({
       user: req.user.id,
@@ -161,7 +186,10 @@ exports.createBooking = async (req, res, next) => {
       showDate: show.date,
       showTime: show.time,
       screenName: show.screen,
-      status: 'confirmed'
+      status: paymentStatus === 'completed' ? 'confirmed' : 'pending',
+      paymentId,
+      paymentMethod: req.body.paymentMethod || 'card',
+      paymentStatus
     });
 
     // Update show with booked seats
@@ -175,11 +203,20 @@ exports.createBooking = async (req, res, next) => {
       await seatLockService.releaseSeats(showId, sessionId);
     }
 
+    // Generate QR code for confirmation
+    const qrCode = await qrService.generateBookingQR(booking);
+
+    // Populate booking for response
+    const populatedBooking = await Booking.findById(booking._id)
+      .populate('movie', 'title poster')
+      .populate('cinema', 'name address city')
+      .populate('show', 'date time screen');
+
     // Send confirmation email (async, don't wait)
     try {
       const user = await User.findById(req.user.id);
       if (user && user.email) {
-        emailService.sendBookingConfirmation(booking, user).catch(err => 
+        emailService.sendBookingConfirmation(populatedBooking, user).catch(err => 
           console.error('Failed to send confirmation email:', err)
         );
       }
@@ -189,7 +226,10 @@ exports.createBooking = async (req, res, next) => {
 
     res.status(201).json({
       success: true,
-      data: booking,
+      data: {
+        ...populatedBooking.toObject(),
+        qrCode: qrCode.dataURL
+      },
       message: 'Booking created successfully'
     });
   } catch (error) {

@@ -1,4 +1,5 @@
 const Movie = require('../models/Movie');
+const Booking = require('../models/Booking');
 
 // @desc    Get all movies
 // @route   GET /api/movies
@@ -152,6 +153,214 @@ exports.getUpcomingMovies = async (req, res, next) => {
       success: true,
       count: movies.length,
       data: movies
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    Add review/rating to movie
+// @route   POST /api/movies/:id/reviews
+// @access  Private
+exports.addReview = async (req, res, next) => {
+  try {
+    const { rating, review } = req.body;
+    const movieId = req.params.id;
+
+    const movie = await Movie.findById(movieId);
+    if (!movie) {
+      return res.status(404).json({
+        success: false,
+        message: 'Movie not found'
+      });
+    }
+
+    // Check if user already reviewed
+    const existingReview = movie.reviews.find(
+      r => r.user.toString() === req.user.id
+    );
+
+    if (existingReview) {
+      return res.status(400).json({
+        success: false,
+        message: 'You have already reviewed this movie'
+      });
+    }
+
+    // Check if user has booked this movie
+    const hasBooked = await Booking.findOne({
+      user: req.user.id,
+      movie: movieId,
+      status: { $in: ['confirmed', 'completed'] }
+    });
+
+    const isVerified = !!hasBooked;
+
+    // Add review
+    movie.reviews.push({
+      user: req.user.id,
+      rating,
+      review,
+      isVerified
+    });
+
+    // Calculate new average rating
+    const totalRating = movie.reviews.reduce((sum, r) => sum + r.rating, 0);
+    movie.averageRating = Math.round((totalRating / movie.reviews.length) * 10) / 10;
+    movie.reviewCount = movie.reviews.length;
+
+    await movie.save();
+
+    res.status(201).json({
+      success: true,
+      message: isVerified ? 'Review added (Verified Purchase)' : 'Review added',
+      data: {
+        averageRating: movie.averageRating,
+        reviewCount: movie.reviewCount
+      }
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    Update review/rating
+// @route   PUT /api/movies/:id/reviews
+// @access  Private
+exports.updateReview = async (req, res, next) => {
+  try {
+    const { rating, review } = req.body;
+    const movieId = req.params.id;
+
+    const movie = await Movie.findById(movieId);
+    if (!movie) {
+      return res.status(404).json({
+        success: false,
+        message: 'Movie not found'
+      });
+    }
+
+    const reviewIndex = movie.reviews.findIndex(
+      r => r.user.toString() === req.user.id
+    );
+
+    if (reviewIndex === -1) {
+      return res.status(400).json({
+        success: false,
+        message: 'Review not found'
+      });
+    }
+
+    // Update review
+    if (rating) movie.reviews[reviewIndex].rating = rating;
+    if (review !== undefined) movie.reviews[reviewIndex].review = review;
+
+    // Recalculate average rating
+    const totalRating = movie.reviews.reduce((sum, r) => sum + r.rating, 0);
+    movie.averageRating = Math.round((totalRating / movie.reviews.length) * 10) / 10;
+
+    await movie.save();
+
+    res.status(200).json({
+      success: true,
+      message: 'Review updated',
+      data: {
+        averageRating: movie.averageRating,
+        reviewCount: movie.reviewCount
+      }
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    Delete review
+// @route   DELETE /api/movies/:id/reviews
+// @access  Private
+exports.deleteReview = async (req, res, next) => {
+  try {
+    const movieId = req.params.id;
+
+    const movie = await Movie.findById(movieId);
+    if (!movie) {
+      return res.status(404).json({
+        success: false,
+        message: 'Movie not found'
+      });
+    }
+
+    const reviewIndex = movie.reviews.findIndex(
+      r => r.user.toString() === req.user.id
+    );
+
+    if (reviewIndex === -1) {
+      return res.status(400).json({
+        success: false,
+        message: 'Review not found'
+      });
+    }
+
+    // Remove review
+    movie.reviews.splice(reviewIndex, 1);
+
+    // Recalculate average rating
+    if (movie.reviews.length > 0) {
+      const totalRating = movie.reviews.reduce((sum, r) => sum + r.rating, 0);
+      movie.averageRating = Math.round((totalRating / movie.reviews.length) * 10) / 10;
+    } else {
+      movie.averageRating = 0;
+    }
+    movie.reviewCount = movie.reviews.length;
+
+    await movie.save();
+
+    res.status(200).json({
+      success: true,
+      message: 'Review deleted'
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    Get movie reviews
+// @route   GET /api/movies/:id/reviews
+// @access  Public
+exports.getMovieReviews = async (req, res, next) => {
+  try {
+    const { page = 1, limit = 10 } = req.query;
+
+    const movie = await Movie.findById(req.params.id)
+      .populate('reviews.user', 'name avatar');
+
+    if (!movie) {
+      return res.status(404).json({
+        success: false,
+        message: 'Movie not found'
+      });
+    }
+
+    const pageNum = parseInt(page);
+    const limitNum = parseInt(limit);
+    const skip = (pageNum - 1) * limitNum;
+
+    // Sort reviews by most recent
+    const sortedReviews = movie.reviews
+      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+    const paginatedReviews = sortedReviews.slice(skip, skip + limitNum);
+
+    res.status(200).json({
+      success: true,
+      count: paginatedReviews.length,
+      total: movie.reviews.length,
+      page: pageNum,
+      pages: Math.ceil(movie.reviews.length / limitNum),
+      data: {
+        reviews: paginatedReviews,
+        averageRating: movie.averageRating,
+        reviewCount: movie.reviewCount
+      }
     });
   } catch (error) {
     next(error);

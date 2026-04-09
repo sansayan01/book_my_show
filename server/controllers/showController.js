@@ -2,6 +2,65 @@ const Show = require('../models/Show');
 const Movie = require('../models/Movie');
 const Cinema = require('../models/Cinema');
 
+// Helper function to check for show timing conflicts
+const checkShowConflicts = async (cinemaId, screen, date, time, duration, excludeShowId = null) => {
+  // Parse the time to get hours and minutes
+  const [hours, minutes] = time.split(':').map(Number);
+  
+  // Calculate show end time in minutes from midnight
+  const showStartMinutes = hours * 60 + minutes;
+  const showEndMinutes = showStartMinutes + duration;
+  
+  // Buffer time between shows (30 minutes)
+  const bufferMinutes = 30;
+  
+  // Find shows on the same screen, same date
+  const startDate = new Date(date);
+  startDate.setHours(0, 0, 0, 0);
+  const endDate = new Date(date);
+  endDate.setHours(23, 59, 59, 999);
+  
+  const query = {
+    cinema: cinemaId,
+    screen: screen,
+    date: { $gte: startDate, $lte: endDate },
+    isAvailable: true
+  };
+  
+  if (excludeShowId) {
+    query._id = { $ne: excludeShowId };
+  }
+  
+  const existingShows = await Show.find(query);
+  
+  // Check for conflicts
+  for (const show of existingShows) {
+    const [existingHours, existingMinutes] = show.time.split(':').map(Number);
+    const existingStartMinutes = existingHours * 60 + existingMinutes;
+    const existingEndMinutes = existingStartMinutes + show.duration;
+    
+    // Check if time slots overlap (with buffer)
+    const hasOverlap = (
+      (showStartMinutes >= existingStartMinutes - bufferMinutes && 
+       showStartMinutes < existingEndMinutes + bufferMinutes) ||
+      (showEndMinutes > existingStartMinutes - bufferMinutes && 
+       showEndMinutes <= existingEndMinutes + bufferMinutes) ||
+      (showStartMinutes <= existingStartMinutes - bufferMinutes && 
+       showEndMinutes >= existingEndMinutes + bufferMinutes)
+    );
+    
+    if (hasOverlap) {
+      return {
+        hasConflict: true,
+        conflictingShow: show,
+        message: `Time slot conflicts with existing show at ${show.time}`
+      };
+    }
+  }
+  
+  return { hasConflict: false };
+};
+
 // @desc    Get shows
 // @route   GET /api/shows
 // @access  Public
