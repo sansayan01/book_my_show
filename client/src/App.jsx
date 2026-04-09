@@ -1,8 +1,12 @@
 import { useState, useEffect } from 'react'
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
+import { AnimatePresence } from 'framer-motion'
 import Header from './components/Header/Header'
 import Footer from './components/Footer/Footer'
 import CitySelector from './components/CitySelector/CitySelector'
+import { BottomNav } from './components/BottomNav/BottomNav'
+import PageTransition from './components/PageTransition/PageTransition'
+import AddToHomeScreen from './components/AddToHomeScreen/AddToHomeScreen'
 import Home from './pages/Home/Home'
 import Movies from './pages/Movies/Movies'
 import MovieDetails from './pages/MovieDetails/MovieDetails'
@@ -23,6 +27,8 @@ import Admin from './pages/Admin/Admin'
 import Offers from './pages/Offers/Offers'
 import GiftCards from './pages/GiftCards/GiftCards'
 import Discussion from './pages/Discussion/Discussion'
+import Premiere from './pages/Premiere/Premiere'
+import Collections from './pages/Collections/Collections'
 import { AuthProvider } from './context/AuthContext'
 import { BookingProvider } from './context/BookingContext'
 
@@ -47,31 +53,37 @@ function App() {
           <div className="min-h-screen flex flex-col">
             <Header />
             <main className="flex-1">
-              <Routes>
-                <Route path="/" element={<Home />} />
-                <Route path="/movies" element={<Movies />} />
-                <Route path="/movie/:id" element={<MovieDetails />} />
-                <Route path="/events" element={<Events />} />
-                <Route path="/sports" element={<Sports />} />
-                <Route path="/plays" element={<Plays />} />
-                <Route path="/stream" element={<Stream />} />
-                <Route path="/activities" element={<Activities />} />
-                <Route path="/book/:showId" element={<SeatSelection />} />
-                <Route path="/checkout" element={<Checkout />} />
-                <Route path="/payment" element={<Payment />} />
-                <Route path="/success" element={<Confirmation />} />
-                <Route path="/profile" element={<Profile />} />
-                <Route path="/login" element={<Login />} />
-                <Route path="/register" element={<Register />} />
-                <Route path="/my-bookings" element={<MyBookings />} />
-                <Route path="/admin" element={<Admin />} />
-                <Route path="/offers" element={<Offers />} />
-                <Route path="/gift-cards" element={<GiftCards />} />
-                <Route path="/discussion" element={<Discussion />} />
-              </Routes>
+              <AnimatePresence mode="wait">
+                <Routes>
+                  <Route path="/" element={<PageTransition><Home /></PageTransition>} />
+                  <Route path="/movies" element={<PageTransition><Movies /></PageTransition>} />
+                  <Route path="/movie/:id" element={<PageTransition><MovieDetails /></PageTransition>} />
+                  <Route path="/events" element={<PageTransition><Events /></PageTransition>} />
+                  <Route path="/sports" element={<PageTransition><Sports /></PageTransition>} />
+                  <Route path="/plays" element={<PageTransition><Plays /></PageTransition>} />
+                  <Route path="/stream" element={<PageTransition><Stream /></PageTransition>} />
+                  <Route path="/activities" element={<PageTransition><Activities /></PageTransition>} />
+                  <Route path="/premiere" element={<PageTransition><Premiere /></PageTransition>} />
+                  <Route path="/collections" element={<PageTransition><Collections /></PageTransition>} />
+                  <Route path="/book/:showId" element={<PageTransition><SeatSelection /></PageTransition>} />
+                  <Route path="/checkout" element={<PageTransition><Checkout /></PageTransition>} />
+                  <Route path="/payment" element={<PageTransition><Payment /></PageTransition>} />
+                  <Route path="/success" element={<PageTransition><Confirmation /></PageTransition>} />
+                  <Route path="/profile" element={<PageTransition><Profile /></PageTransition>} />
+                  <Route path="/login" element={<PageTransition><Login /></PageTransition>} />
+                  <Route path="/register" element={<PageTransition><Register /></PageTransition>} />
+                  <Route path="/my-bookings" element={<PageTransition><MyBookings /></PageTransition>} />
+                  <Route path="/admin" element={<PageTransition><Admin /></PageTransition>} />
+                  <Route path="/offers" element={<PageTransition><Offers /></PageTransition>} />
+                  <Route path="/gift-cards" element={<PageTransition><GiftCards /></PageTransition>} />
+                  <Route path="/discussion" element={<PageTransition><Discussion /></PageTransition>} />
+                </Routes>
+              </AnimatePresence>
             </main>
             <Footer />
+            <BottomNav />
             <CitySelector isOpen={showCitySelector} onClose={handleCityConfirm} />
+            <AddToHomeScreen />
           </div>
         </Router>
       </BookingProvider>

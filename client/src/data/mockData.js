@@ -17,7 +17,9 @@ export const movies = [
     ],
     director: 'Jake Schreier',
     trailer: 'https://www.youtube.com/embed/XtrfJ63xKwE',
-    format: '2D, IMAX'
+    format: '2D, IMAX',
+    isNewRelease: true,
+    imax: true
   },
   {
     id: '2',
