@@ -1,11 +1,19 @@
 import { useState, useEffect, useRef } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { Search, User, Menu, X, ChevronDown, Ticket, LogOut, ChevronRight, MapPin, Crown, Star, Zap, Tv, Sparkles, Shield } from 'lucide-react'
+import { Search, User, Menu, X, ChevronDown, Ticket, LogOut, ChevronRight, MapPin, Crown, Star, Zap, Tv, Sparkles, Shield, Trophy, Calendar, Bell, Scale } from 'lucide-react'
 import { useAuth } from '../../context/AuthContext'
 import { cities } from '../../data/mockData'
 import AuthModal from '../AuthModal/AuthModal'
 import AdvancedSearch from '../AdvancedSearch/AdvancedSearch'
 import Notifications, { NotificationBell } from '../Notifications/Notifications'
+import ThemeToggle from '../ThemeToggle/ThemeToggle'
+import LanguageSwitcher from '../LanguageSwitcher/LanguageSwitcher'
+import MovieComparison from '../MovieComparison/MovieComparison'
+import Watchlist from '../Watchlist/Watchlist'
+import BookingCalendar from '../BookingCalendar/BookingCalendar'
+import PriceAlerts from '../PriceAlerts/PriceAlerts'
+import Gamification from '../Gamification/Gamification'
+import { useGamification } from '../../context/GamificationContext'
 
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
@@ -16,7 +24,13 @@ const Header = () => {
   const [activeDropdown, setActiveDropdown] = useState(null)
   const [showAdvancedSearch, setShowAdvancedSearch] = useState(false)
   const [showNotifications, setShowNotifications] = useState(false)
+  const [showMovieComparison, setShowMovieComparison] = useState(false)
+  const [showWatchlist, setShowWatchlist] = useState(false)
+  const [showBookingCalendar, setShowBookingCalendar] = useState(false)
+  const [showPriceAlerts, setShowPriceAlerts] = useState(false)
+  const [showGamification, setShowGamification] = useState(false)
   const { user, openAuthModal, logout } = useAuth()
+  const { userPoints, userStreak, unlockedAchievements } = useGamification()
   const navigate = useNavigate()
   const dropdownRef = useRef(null)
 
@@ -29,6 +43,7 @@ const Header = () => {
         { name: 'Coming Soon', path: '/movies?filter=coming' },
         { name: 'Exclusive', path: '/movies?filter=exclusive' },
         { name: 'Top Rated', path: '/movies?filter=top' },
+        { name: 'Compare Movies', path: null, action: () => setShowMovieComparison(true), icon: Scale },
         { name: 'Stream', path: '/stream' }
       ]
     },
@@ -86,7 +101,11 @@ const Header = () => {
     { name: 'Offers', path: '/offers' },
     { name: 'Gift Cards', path: '/gift-cards' },
     { name: 'Timeline', path: '/timeline' },
-    { name: 'Community', path: '/community' }
+    { name: 'Community', path: '/community' },
+    { name: 'Watchlist', path: null, action: () => setShowWatchlist(true), icon: Star },
+    { name: 'My Calendar', path: null, action: () => setShowBookingCalendar(true), icon: Calendar },
+    { name: 'Price Alerts', path: null, action: () => setShowPriceAlerts(true), icon: Bell },
+    { name: 'Rewards', path: null, action: () => setShowGamification(true), icon: Trophy }
   ]
 
   useEffect(() => {
@@ -363,17 +382,30 @@ const Header = () => {
             <div className="flex items-center h-12">
               {navItems.map((item) => (
                 <div key={item.name} className="relative group">
-                  <Link
-                    to={item.path}
-                    onClick={() => item.dropdown && setActiveDropdown(activeDropdown === item.name ? null : item.name)}
-                    onMouseEnter={() => setActiveDropdown(item.name)}
-                    className="px-4 py-2.5 text-white hover:text-[#FF0040] text-sm font-medium transition-colors relative flex items-center gap-1"
-                  >
-                    {item.icon && <item.icon className="w-4 h-4" />}
-                    {item.name}
-                    {item.dropdown && <ChevronDown className={`w-3 h-3 transition-transform ${activeDropdown === item.name ? 'rotate-180' : ''}`} />}
-                    <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-[#FF0040] transition-all duration-300 group-hover:w-full" />
-                  </Link>
+                  {item.action ? (
+                    <button
+                      onClick={() => item.action()}
+                      onMouseEnter={() => item.dropdown && setActiveDropdown(item.name)}
+                      className="px-4 py-2.5 text-white hover:text-[#FF0040] text-sm font-medium transition-colors relative flex items-center gap-1"
+                    >
+                      {item.icon && <item.icon className="w-4 h-4" />}
+                      {item.name}
+                      {item.dropdown && <ChevronDown className={`w-3 h-3 transition-transform ${activeDropdown === item.name ? 'rotate-180' : ''}`} />}
+                      <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-[#FF0040] transition-all duration-300 group-hover:w-full" />
+                    </button>
+                  ) : (
+                    <Link
+                      to={item.path}
+                      onClick={() => item.dropdown && setActiveDropdown(activeDropdown === item.name ? null : item.name)}
+                      onMouseEnter={() => setActiveDropdown(item.name)}
+                      className="px-4 py-2.5 text-white hover:text-[#FF0040] text-sm font-medium transition-colors relative flex items-center gap-1"
+                    >
+                      {item.icon && <item.icon className="w-4 h-4" />}
+                      {item.name}
+                      {item.dropdown && <ChevronDown className={`w-3 h-3 transition-transform ${activeDropdown === item.name ? 'rotate-180' : ''}`} />}
+                      <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-[#FF0040] transition-all duration-300 group-hover:w-full" />
+                    </Link>
+                  )}
                   
                   {/* Dropdown Menu */}
                   {activeDropdown === item.name && item.dropdown && (
@@ -382,15 +414,27 @@ const Header = () => {
                       onMouseLeave={() => setActiveDropdown(null)}
                     >
                       {item.dropdown.map((subItem, idx) => (
-                        <Link
-                          key={idx}
-                          to={subItem.path}
-                          className="block px-4 py-2.5 text-sm text-gray-700 hover:bg-red-50 hover:text-[#FF0040] transition-colors flex items-center justify-between"
-                          onClick={() => setActiveDropdown(null)}
-                        >
-                          {subItem.name}
-                          <ChevronRight className="w-3 h-3 opacity-0 group-hover:opacity-100" />
-                        </Link>
+                        subItem.action ? (
+                          <button
+                            key={idx}
+                            onClick={() => { subItem.action(); setActiveDropdown(null); }}
+                            className="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-red-50 hover:text-[#FF0040] transition-colors flex items-center gap-2"
+                          >
+                            {subItem.icon && <subItem.icon className="w-4 h-4" />}
+                            {subItem.name}
+                          </button>
+                        ) : (
+                          <Link
+                            key={idx}
+                            to={subItem.path}
+                            className="block px-4 py-2.5 text-sm text-gray-700 hover:bg-red-50 hover:text-[#FF0040] transition-colors flex items-center justify-between"
+                            onClick={() => setActiveDropdown(null)}
+                          >
+                            {subItem.icon && <subItem.icon className="w-4 h-4 mr-2" />}
+                            {subItem.name}
+                            <ChevronRight className="w-3 h-3 opacity-0 group-hover:opacity-100" />
+                          </Link>
+                        )
                       ))}
                     </div>
                   )}
@@ -405,6 +449,42 @@ const Header = () => {
           isOpen={showAdvancedSearch}
           onClose={() => setShowAdvancedSearch(false)}
           initialQuery={searchQuery}
+        />
+
+        {/* Theme Toggle */}
+        <ThemeToggle />
+
+        {/* Language Switcher */}
+        <LanguageSwitcher />
+
+        {/* Movie Comparison Modal */}
+        <MovieComparison
+          isOpen={showMovieComparison}
+          onClose={() => setShowMovieComparison(false)}
+        />
+
+        {/* Watchlist Modal */}
+        <Watchlist
+          isOpen={showWatchlist}
+          onClose={() => setShowWatchlist(false)}
+        />
+
+        {/* Booking Calendar Modal */}
+        <BookingCalendar
+          isOpen={showBookingCalendar}
+          onClose={() => setShowBookingCalendar(false)}
+        />
+
+        {/* Price Alerts Modal */}
+        <PriceAlerts
+          isOpen={showPriceAlerts}
+          onClose={() => setShowPriceAlerts(false)}
+        />
+
+        {/* Gamification Modal */}
+        <Gamification
+          isOpen={showGamification}
+          onClose={() => setShowGamification(false)}
         />
       </header>
       <AuthModal />

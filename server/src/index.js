@@ -1,6 +1,7 @@
 /**
  * BookMyShow Backend Server
  * Advanced Express Server with WebSocket, Caching, API Versioning, and Graceful Shutdown
+ * Enterprise Features: GraphQL, Security Headers, Compression, Analytics
  */
 
 const express = require('express');
@@ -9,12 +10,22 @@ const cors = require('cors');
 const dotenv = require('dotenv');
 const path = require('path');
 const fs = require('fs');
+const compression = require('compression');
 
 // Load env vars
 dotenv.config();
 
 // Connect to database
 const connectDB = require('../config/db');
+
+// Import new enterprise services
+const { apiAnalytics, errorTracker } = require('../middleware/apiAnalytics');
+const { securityHeaders, additionalSecurityHeaders } = require('../middleware/securityHeaders');
+const { cacheMiddleware, setCacheHeaders } = require('../middleware/cacheHeaders');
+const { ipRateLimiter, dynamicRateLimiter, getAllIPStats } = require('../middleware/ipRateLimiter');
+const { bodySizeLimit, dynamicBodyLimit } = require('../middleware/bodySizeLimit');
+const { dbPoolMetrics, dbQueryTracker, getPoolMetrics } = require('../middleware/dbPoolMetrics');
+const { deepHealthCheck, simpleHealthCheck } = require('../middleware/healthCheckDeep');
 
 // Import new services
 const wsManager = require('../services/websocketManager');
@@ -51,12 +62,16 @@ const recommendationRoutes = require('../routes/recommendations');
 const searchRoutes = require('../routes/search');
 const sseRoutes = require('../routes/sse');
 const healthRoutes = require('../routes/health');
+const graphqlRoutes = require('../routes/graphql');
 
 // Swagger documentation
 const setupSwagger = require('../config/swagger');
 
 // Error handler
 const errorHandler = require('../middleware/errorHandler');
+
+// Auth middleware
+const { protect, admin } = require('../middleware/auth');
 
 // Rate limiter
 const { generalLimiter, authLimiter, bookingLimiter } = require('../middleware/rateLimiter');
@@ -75,6 +90,36 @@ const server = http.createServer(app);
 
 // Connect to database
 connectDB();
+
+// ==========================================
+// ENTERPRISE SECURITY MIDDLEWARE
+// ==========================================
+
+// Security headers (helmet)
+app.use(securityHeaders);
+app.use(additionalSecurityHeaders);
+
+// Request compression
+app.use(compression({
+  filter: (req, res) => {
+    if (req.headers['x-no-compression']) return false;
+    return compression.filter(req, res);
+  },
+  level: 6,
+  threshold: 1024
+}));
+
+// Cache headers for static resources
+app.use(setCacheHeaders);
+
+// API Analytics
+app.use(apiAnalytics);
+
+// Database query tracking
+app.use(dbQueryTracker);
+
+// Dynamic body size limits
+app.use(dynamicBodyLimit);
 
 // Body parser with size limit
 app.use(express.json({ limit: '10mb' }));
@@ -120,6 +165,14 @@ app.use('/api/v1/', generalLimiter);
 app.use('/api/v1/auth', authLimiter);
 app.use('/api/v1/bookings', bookingLimiter);
 
+// Apply IP-based rate limiting for all API routes
+app.use('/api/v1/', dynamicRateLimiter);
+
+// Apply caching with ETag/Last-Modified
+app.use('/api/v1/movies', cacheMiddleware({ etag: true, lastModified: true, maxAge: 300 }));
+app.use('/api/v1/cinemas', cacheMiddleware({ etag: true, lastModified: true, maxAge: 300 }));
+app.use('/api/v1/shows', cacheMiddleware({ etag: true, lastModified: true, maxAge: 60 }));
+
 /**
  * API VERSION 1 (/api/v1/*)
  * All routes are now prefixed with /api/v1 for proper versioning
@@ -146,6 +199,9 @@ app.use('/api/v1/recommendations', recommendationRoutes);
 app.use('/api/v1/search', searchRoutes);
 app.use('/api/v1/sse', sseRoutes);
 app.use('/api/v1/health', healthRoutes);
+
+// GraphQL API endpoint
+app.use('/api/v1/graphql', graphqlRoutes);
 
 // Setup Swagger documentation
 setupSwagger(app);
@@ -196,6 +252,44 @@ app.get('/api/v1/health', async (req, res) => {
     });
   }
 });
+
+/**
+ * Deep health check endpoint (enterprise)
+ * Provides comprehensive system diagnostics
+ */
+app.get('/api/v1/health/deep', deepHealthCheck);
+
+/**
+ * Simple health check (for load balancers)
+ */
+app.get('/health/live', simpleHealthCheck);
+app.get('/health/ready', simpleHealthCheck);
+
+/**
+ * API usage analytics endpoint (admin only)
+ */
+app.get('/api/v1/admin/analytics', protect, admin, (req, res) => {
+  const analyticsService = require('../services/apiAnalyticsService');
+  res.json({
+    success: true,
+    analytics: analyticsService.getStats()
+  });
+});
+
+/**
+ * IP analytics endpoint (admin only)
+ */
+app.get('/api/v1/admin/ip-analytics', protect, admin, (req, res) => {
+  res.json({
+    success: true,
+    ips: getAllIPStats()
+  });
+});
+
+/**
+ * Database connection pool metrics (admin only)
+ */
+app.get('/api/v1/admin/pool-metrics', protect, admin, getPoolMetrics);
 
 /**
  * Cache management endpoint (admin only)
@@ -271,6 +365,9 @@ featureFlagService.initializeDefaults().catch(err => {
 // Log service initialization
 console.log('[Services] Initialized: i18n, feature flags, job queue, SSE, recommendations');
 
+// Log enterprise features initialization
+console.log('[Enterprise] Security headers (helmet), compression, GraphQL, API analytics enabled');
+
 // Start server
 const PORT = process.env.PORT || 5000;
 
@@ -283,11 +380,25 @@ server.listen(PORT, () => {
 ║  Mode: ${(process.env.NODE_ENV || 'development').padEnd(41)}║
 ║  API Version: v1                                           ║
 ║  WebSocket: /ws                                           ║
+║  GraphQL: /api/v1/graphql                                  ║
+║  GraphiQL: /api/v1/graphql/playground                      ║
+╠═══════════════════════════════════════════════════════════╣
+║  ENTERPRISE FEATURES:                                      ║
+║  - Security Headers (helmet) ✓                            ║
+║  - Request/Response Compression ✓                        ║
+║  - GraphQL API Layer ✓                                     ║
+║  - API Usage Analytics ✓                                  ║
+║  - ETag/Last-Modified Caching ✓                           ║
+║  - DB Connection Pool Metrics ✓                           ║
+║  - IP-Based Rate Limiting ✓                               ║
+║  - Deep Health Check Mode ✓                               ║
+║  - CORS Per-Route Config ✓                                ║
 ╚═══════════════════════════════════════════════════════════╝
   `);
   console.log(`Server running on port ${PORT}`);
   console.log(`API Base URL: http://localhost:${PORT}/api/v1`);
   console.log(`WebSocket URL: ws://localhost:${PORT}/ws`);
+  console.log(`GraphQL URL: http://localhost:${PORT}/api/v1/graphql`);
 });
 
 /**

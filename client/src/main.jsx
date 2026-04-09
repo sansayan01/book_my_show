@@ -2,6 +2,9 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import './index.css'
 import App from './App.jsx'
+import { ThemeProvider } from './context/ThemeContext'
+import { LanguageProvider } from './context/LanguageContext'
+import { GamificationProvider } from './context/GamificationContext'
 
 // PWA Setup
 const initPWA = async () => {
@@ -101,10 +104,16 @@ if (prefersHighContrast.matches) {
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
-    <a href="#main-content" className="skip-link">
-      Skip to main content
-    </a>
-    <App />
+    <ThemeProvider>
+      <LanguageProvider>
+        <GamificationProvider>
+          <a href="#main-content" className="skip-link">
+            Skip to main content
+          </a>
+          <App />
+        </GamificationProvider>
+      </LanguageProvider>
+    </ThemeProvider>
   </StrictMode>,
 )
 
