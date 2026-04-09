@@ -77,6 +77,21 @@ const Header = () => {
         { name: 'Prime Video', path: '/stream?platform=prime' },
         { name: 'Hotstar', path: '/stream?platform=hotstar' }
       ]
+    },
+    {
+      name: 'Offers', path: '/offers', dropdown: [
+        { name: 'All Offers', path: '/offers' },
+        { name: 'Movies', path: '/offers?cat=movies' },
+        { name: 'Bank Offers', path: '/offers?cat=bank' },
+        { name: 'Gift Cards', path: '/gift-cards' }
+      ]
+    },
+    {
+      name: 'Discussion', path: '/discussion', dropdown: [
+        { name: 'Discussions', path: '/discussion' },
+        { name: 'Reviews', path: '/discussion?cat=reviews' },
+        { name: 'Theories', path: '/discussion?cat=theories' }
+      ]
     }
   ]
 

@@ -1,6 +1,6 @@
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
-import { Search, Filter, SlidersHorizontal, Grid, List, ChevronDown, Star, Clock, X, Calendar, MapPin, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Search, Filter, SlidersHorizontal, Grid, List, ChevronDown, Star, Clock, X, Calendar, MapPin, ChevronLeft, ChevronRight, Loader2 } from 'lucide-react'
 import MovieCard from '../../components/MovieCard/MovieCard'
 import { movies } from '../../data/mockData'
 
@@ -10,7 +10,16 @@ const Movies = () => {
   const [showFilters, setShowFilters] = useState(true)
   const [viewMode, setViewMode] = useState('grid')
   const [sortBy, setSortBy] = useState('popularity')
-  const [activeTab, setActiveTab] = useState('nowShowing') // 'nowShowing' or 'comingSoon'
+  const [activeTab, setActiveTab] = useState('nowShowing')
+  
+  // Infinite scroll
+  const [displayedMovies, setDisplayedMovies] = useState(12)
+  const [isLoading, setIsLoading] = useState(false)
+  const loaderRef = useRef(null)
+  
+  // Autocomplete
+  const [showAutocomplete, setShowAutocomplete] = useState(false)
+  const [autocompleteResults, setAutocompleteResults] = useState([])
   
   // Filters
   const [selectedLanguages, setSelectedLanguages] = useState([])
@@ -89,6 +98,46 @@ const Movies = () => {
 
   const activeFiltersCount = selectedLanguages.length + selectedGenres.length + selectedFormats.length + (selectedPrice !== 'all' ? 1 : 0)
 
+  // Infinite scroll effect
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && !isLoading && displayedMovies < filteredMovies.length) {
+          setIsLoading(true)
+          setTimeout(() => {
+            setDisplayedMovies(prev => Math.min(prev + 12, filteredMovies.length))
+            setIsLoading(false)
+          }, 500)
+        }
+      },
+      { threshold: 0.1 }
+    )
+    
+    if (loaderRef.current) {
+      observer.observe(loaderRef.current)
+    }
+    
+    return () => observer.disconnect()
+  }, [isLoading, displayedMovies, filteredMovies.length])
+  
+  // Reset displayed movies when filters change
+  useEffect(() => {
+    setDisplayedMovies(12)
+  }, [selectedLanguages, selectedGenres, selectedFormats, selectedPrice, activeTab, searchQuery])
+  
+  // Autocomplete search
+  useEffect(() => {
+    if (searchQuery.length >= 2) {
+      const results = movies.filter(m => 
+        m.title.toLowerCase().includes(searchQuery.toLowerCase())
+      ).slice(0, 5)
+      setAutocompleteResults(results)
+      setShowAutocomplete(true)
+    } else {
+      setShowAutocomplete(false)
+    }
+  }, [searchQuery])
+
   return (
     <div className="bg-[#1A1A1A] min-h-screen">
       {/* Header Section */}
@@ -130,8 +179,32 @@ const Movies = () => {
                 placeholder="Search movies..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
+                onFocus={() => searchQuery.length >= 2 && setShowAutocomplete(true)}
                 className="w-full pl-10 pr-4 py-2.5 bg-[#2A2A2A] border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-[#FF0040]"
               />
+              
+              {/* Autocomplete Dropdown */}
+              {showAutocomplete && autocompleteResults.length > 0 && (
+                <div className="absolute top-full left-0 right-0 mt-1 bg-[#2A2A2A] border border-gray-700 rounded-lg shadow-xl z-50 overflow-hidden">
+                  {autocompleteResults.map(movie => (
+                    <Link
+                      key={movie.id}
+                      to={`/movie/${movie.id}`}
+                      onClick={() => {
+                        setShowAutocomplete(false)
+                        setSearchQuery(movie.title)
+                      }}
+                      className="flex items-center gap-3 p-3 hover:bg-[#3A3A3A] transition-colors"
+                    >
+                      <img src={movie.poster} alt={movie.title} className="w-10 h-14 object-cover rounded" />
+                      <div>
+                        <p className="text-white font-medium">{movie.title}</p>
+                        <p className="text-gray-400 text-sm">{movie.language} | {movie.genre[0]}</p>
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* Controls */}
@@ -324,52 +397,61 @@ const Movies = () => {
 
             {/* Movies Grid */}
             {filteredMovies.length > 0 ? (
-              <div className={viewMode === 'grid' 
-                ? 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 xl:grid-cols-5 gap-4'
-                : 'flex flex-col gap-4'
-              }>
-                {filteredMovies.map(movie => (
-                  viewMode === 'grid' ? (
-                    <MovieCard key={movie.id} movie={movie} />
-                  ) : (
-                    <Link
-                      key={movie.id}
-                      to={`/movie/${movie.id}`}
-                      className="flex gap-4 bg-[#1F1F1F] rounded-xl p-3 hover:bg-[#2A2A2A] transition-colors"
-                    >
-                      <img
-                        src={movie.poster}
-                        alt={movie.title}
-                        className="w-24 h-36 object-cover rounded-lg"
-                      />
-                      <div className="flex-1 py-2">
-                        <h3 className="text-white font-semibold text-lg">{movie.title}</h3>
-                        <div className="flex items-center gap-2 mt-1 text-gray-400 text-sm">
-                          <span className="flex items-center gap-1">
-                            <Star className="w-4 h-4 text-green-400 fill-green-400" />
-                            {movie.rating}
-                          </span>
-                          <span>•</span>
-                          <span>{movie.language}</span>
-                          <span>•</span>
-                          <span>{movie.duration} min</span>
-                        </div>
-                        <p className="text-gray-500 text-sm mt-2 line-clamp-2">{movie.description}</p>
-                        <div className="flex gap-2 mt-3">
-                          {movie.genre.slice(0, 3).map((g, i) => (
-                            <span key={i} className="px-2 py-0.5 bg-[#2A2A2A] text-gray-400 text-xs rounded">
-                              {g}
+              <>
+                <div className={viewMode === 'grid' 
+                  ? 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 xl:grid-cols-5 gap-4'
+                  : 'flex flex-col gap-4'
+                }>
+                  {filteredMovies.slice(0, displayedMovies).map(movie => (
+                    viewMode === 'grid' ? (
+                      <MovieCard key={movie.id} movie={movie} />
+                    ) : (
+                      <Link
+                        key={movie.id}
+                        to={`/movie/${movie.id}`}
+                        className="flex gap-4 bg-[#1F1F1F] rounded-xl p-3 hover:bg-[#2A2A2A] transition-colors"
+                      >
+                        <img
+                          src={movie.poster}
+                          alt={movie.title}
+                          className="w-24 h-36 object-cover rounded-lg"
+                        />
+                        <div className="flex-1 py-2">
+                          <h3 className="text-white font-semibold text-lg">{movie.title}</h3>
+                          <div className="flex items-center gap-2 mt-1 text-gray-400 text-sm">
+                            <span className="flex items-center gap-1">
+                              <Star className="w-4 h-4 text-green-400 fill-green-400" />
+                              {movie.rating}
                             </span>
-                          ))}
+                            <span>•</span>
+                            <span>{movie.language}</span>
+                            <span>•</span>
+                            <span>{movie.duration} min</span>
+                          </div>
+                          <p className="text-gray-500 text-sm mt-2 line-clamp-2">{movie.description}</p>
+                          <div className="flex gap-2 mt-3">
+                            {movie.genre.slice(0, 3).map((g, i) => (
+                              <span key={i} className="px-2 py-0.5 bg-[#2A2A2A] text-gray-400 text-xs rounded">
+                                {g}
+                              </span>
+                            ))}
+                          </div>
                         </div>
-                      </div>
-                      <button className="self-center px-6 py-2.5 bg-[#FF0040] text-white rounded-lg font-semibold text-sm hover:bg-[#CC0033] transition-colors">
-                        Book Now
-                      </button>
-                    </Link>
-                  )
-                ))}
-              </div>
+                        <button className="self-center px-6 py-2.5 bg-[#FF0040] text-white rounded-lg font-semibold text-sm hover:bg-[#CC0033] transition-colors">
+                          Book Now
+                        </button>
+                      </Link>
+                    )
+                  ))}
+                </div>
+                
+                {/* Infinite Scroll Loader */}
+                {displayedMovies < filteredMovies.length && (
+                  <div ref={loaderRef} className="flex justify-center py-8">
+                    <Loader2 className="w-8 h-8 text-[#FF0040] animate-spin" />
+                  </div>
+                )}
+              </>
             ) : (
               <div className="text-center py-16">
                 <div className="w-20 h-20 bg-[#2A2A2A] rounded-full flex items-center justify-center mx-auto mb-4">

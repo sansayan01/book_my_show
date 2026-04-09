@@ -19,6 +19,10 @@ import Activities from './pages/Activities/Activities'
 import Login from './pages/Login/Login'
 import Register from './pages/Register/Register'
 import MyBookings from './pages/MyBookings/MyBookings'
+import Admin from './pages/Admin/Admin'
+import Offers from './pages/Offers/Offers'
+import GiftCards from './pages/GiftCards/GiftCards'
+import Discussion from './pages/Discussion/Discussion'
 import { AuthProvider } from './context/AuthContext'
 import { BookingProvider } from './context/BookingContext'
 
@@ -60,6 +64,10 @@ function App() {
                 <Route path="/login" element={<Login />} />
                 <Route path="/register" element={<Register />} />
                 <Route path="/my-bookings" element={<MyBookings />} />
+                <Route path="/admin" element={<Admin />} />
+                <Route path="/offers" element={<Offers />} />
+                <Route path="/gift-cards" element={<GiftCards />} />
+                <Route path="/discussion" element={<Discussion />} />
               </Routes>
             </main>
             <Footer />

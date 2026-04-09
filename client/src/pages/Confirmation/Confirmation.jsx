@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { CheckCircle, Download, Share2, Home, Calendar, Ticket, MapPin } from 'lucide-react'
+import { QRCodeSVG } from 'qrcode.react'
 
 const Confirmation = () => {
   const [searchParams] = useSearchParams()
@@ -109,11 +110,13 @@ const Confirmation = () => {
 
           {/* QR Code Placeholder */}
           <div className="p-6 text-center">
-            <div className="w-32 h-32 bg-white rounded-lg mx-auto mb-2 flex items-center justify-center">
-              <div className="text-center">
-                <div className="text-4xl">🎟️</div>
-                <p className="text-black text-xs mt-1">Scan at venue</p>
-              </div>
+            <div className="w-32 h-32 bg-white rounded-lg mx-auto mb-2 flex items-center justify-center p-2">
+              <QRCodeSVG 
+                value={`BMS${booking.id}`} 
+                size={112}
+                level="M"
+                includeMargin={false}
+              />
             </div>
             <p className="text-gray-400 text-xs">Show this QR code at the cinema entrance</p>
           </div>

@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useLocation, useNavigate, Link } from 'react-router-dom'
-import { ChevronLeft, CreditCard, Smartphone, Ticket, MapPin, Clock, User, Mail, Phone, Lock, Check, Shield, Wallet } from 'lucide-react'
+import { ChevronLeft, CreditCard, Smartphone, Ticket, MapPin, Clock, User, Mail, Phone, Lock, Check, Shield, Wallet, AlertCircle } from 'lucide-react'
 
 const Checkout = () => {
   const location = useLocation()
@@ -12,6 +12,55 @@ const Checkout = () => {
   const [promoCode, setPromoCode] = useState('')
   const [appliedPromo, setAppliedPromo] = useState(null)
   const [couponDiscount, setCouponDiscount] = useState(0)
+  const [addInsurance, setAddInsurance] = useState(false)
+  const [promoError, setPromoError] = useState('')
+  
+  // Form state
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    phone: ''
+  })
+  const [formErrors, setFormErrors] = useState({})
+
+  // Validation
+  const validateEmail = (email) => {
+    const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    return re.test(email)
+  }
+
+  const validatePhone = (phone) => {
+    const re = /^[6-9]\d{9}$/
+    return re.test(phone.replace(/\D/g, ''))
+  }
+
+  const validateForm = () => {
+    const errors = {}
+    if (!formData.name.trim()) {
+      errors.name = 'Name is required'
+    } else if (formData.name.length < 2) {
+      errors.name = 'Name must be at least 2 characters'
+    }
+    if (!formData.email.trim()) {
+      errors.email = 'Email is required'
+    } else if (!validateEmail(formData.email)) {
+      errors.email = 'Please enter a valid email address'
+    }
+    if (!formData.phone.trim()) {
+      errors.phone = 'Phone number is required'
+    } else if (!validatePhone(formData.phone)) {
+      errors.phone = 'Please enter a valid 10-digit phone number'
+    }
+    setFormErrors(errors)
+    return Object.keys(errors).length === 0
+  }
+
+  const handleInputChange = (field, value) => {
+    setFormData(prev => ({ ...prev, [field]: value }))
+    if (formErrors[field]) {
+      setFormErrors(prev => ({ ...prev, [field]: '' }))
+    }
+  }
 
   if (!movie || !cinema || !seats?.length) {
     return (
@@ -27,16 +76,27 @@ const Checkout = () => {
   const basePrice = cinema.price * seats.length
   const convenienceFee = Math.round(basePrice * 0.04)
   const GST = Math.round((basePrice + convenienceFee) * 0.18)
-  const total = basePrice + convenienceFee + GST - couponDiscount
+  const insuranceFee = addInsurance ? 25 : 0
+  const total = basePrice + convenienceFee + GST - couponDiscount + insuranceFee
 
   const applyPromo = () => {
+    setPromoError('')
     if (promoCode.toUpperCase() === 'BMS20') {
       setAppliedPromo('BMS20')
       setCouponDiscount(Math.round(basePrice * 0.2))
     } else if (promoCode.toUpperCase() === 'FIRST50') {
       setAppliedPromo('FIRST50')
       setCouponDiscount(Math.round(basePrice * 0.5))
+    } else {
+      setPromoError('Invalid promo code. Try BMS20 or FIRST50')
     }
+  }
+
+  const removePromo = () => {
+    setAppliedPromo(null)
+    setCouponDiscount(0)
+    setPromoCode('')
+    setPromoError('')
   }
 
   const handlePayment = () => {
@@ -103,29 +163,103 @@ const Checkout = () => {
                   <div className="grid sm:grid-cols-2 gap-4">
                     <div>
                       <label className="text-gray-400 text-sm mb-2 block">Full Name</label>
-                      <input
-                        type="text"
-                        placeholder="Enter your name"
-                        className="w-full px-4 py-3 bg-[#2A2A2A] border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-[#FF0040]"
-                      />
+                      <div className="relative">
+                        <input
+                          type="text"
+                          placeholder="Enter your name"
+                          value={formData.name}
+                          onChange={(e) => handleInputChange('name', e.target.value)}
+                          className={`w-full px-4 py-3 bg-[#2A2A2A] border rounded-lg text-white placeholder-gray-500 focus:outline-none ${
+                            formErrors.name ? 'border-red-500' : 'border-gray-700 focus:border-[#FF0040]'
+                          }`}
+                        />
+                        {formErrors.name && (
+                          <div className="absolute -bottom-6 left-0 flex items-center gap-1 text-red-500 text-xs">
+                            <AlertCircle className="w-3 h-3" />
+                            {formErrors.name}
+                          </div>
+                        )}
+                      </div>
                     </div>
                     <div>
                       <label className="text-gray-400 text-sm mb-2 block">Email</label>
-                      <input
-                        type="email"
-                        placeholder="your@email.com"
-                        className="w-full px-4 py-3 bg-[#2A2A2A] border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-[#FF0040]"
-                      />
+                      <div className="relative">
+                        <input
+                          type="email"
+                          placeholder="your@email.com"
+                          value={formData.email}
+                          onChange={(e) => handleInputChange('email', e.target.value)}
+                          className={`w-full px-4 py-3 bg-[#2A2A2A] border rounded-lg text-white placeholder-gray-500 focus:outline-none ${
+                            formErrors.email ? 'border-red-500' : 'border-gray-700 focus:border-[#FF0040]'
+                          }`}
+                        />
+                        {formErrors.email && (
+                          <div className="absolute -bottom-6 left-0 flex items-center gap-1 text-red-500 text-xs">
+                            <AlertCircle className="w-3 h-3" />
+                            {formErrors.email}
+                          </div>
+                        )}
+                      </div>
                     </div>
-                    <div>
+                    <div className="sm:col-span-2">
                       <label className="text-gray-400 text-sm mb-2 block">Phone Number</label>
-                      <input
-                        type="tel"
-                        placeholder="+91 98765 43210"
-                        className="w-full px-4 py-3 bg-[#2A2A2A] border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-[#FF0040]"
-                      />
+                      <div className="relative">
+                        <input
+                          type="tel"
+                          placeholder="+91 98765 43210"
+                          value={formData.phone}
+                          onChange={(e) => handleInputChange('phone', e.target.value)}
+                          className={`w-full px-4 py-3 bg-[#2A2A2A] border rounded-lg text-white placeholder-gray-500 focus:outline-none ${
+                            formErrors.phone ? 'border-red-500' : 'border-gray-700 focus:border-[#FF0040]'
+                          }`}
+                        />
+                        {formErrors.phone && (
+                          <div className="absolute -bottom-6 left-0 flex items-center gap-1 text-red-500 text-xs">
+                            <AlertCircle className="w-3 h-3" />
+                            {formErrors.phone}
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
+                </div>
+
+                {/* Insurance Add-on */}
+                <div className="bg-[#1F1F1F] rounded-xl p-6">
+                  <label className="flex items-start gap-4 cursor-pointer group">
+                    <input 
+                      type="checkbox" 
+                      checked={addInsurance}
+                      onChange={(e) => setAddInsurance(e.target.checked)}
+                      className="mt-1 w-5 h-5 rounded border-gray-600 bg-[#2A2A2A] text-[#FF0040] focus:ring-[#FF0040] focus:ring-offset-0 cursor-pointer"
+                    />
+                    <div className="flex-1">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <Shield className="w-5 h-5 text-[#FF0040]" />
+                          <span className="text-white font-medium group-hover:text-[#FF0040] transition-colors">
+                            Ticket Protection
+                          </span>
+                        </div>
+                        <span className="text-[#FF0040] font-medium">₹25</span>
+                      </div>
+                      <p className="text-gray-400 text-sm mt-2">
+                        Get refund on booked tickets in case of medical emergency or cancellation. 
+                        100% money-back guarantee.
+                      </p>
+                      <ul className="mt-3 space-y-1">
+                        <li className="text-gray-500 text-xs flex items-center gap-2">
+                          <Check className="w-3 h-3 text-green-500" /> Instant refund
+                        </li>
+                        <li className="text-gray-500 text-xs flex items-center gap-2">
+                          <Check className="w-3 h-3 text-green-500" /> Covers all ticket types
+                        </li>
+                        <li className="text-gray-500 text-xs flex items-center gap-2">
+                          <Check className="w-3 h-3 text-green-500" /> No questions asked
+                        </li>
+                      </ul>
+                    </div>
+                  </label>
                 </div>
 
                 {/* Payment Method */}
@@ -135,7 +269,7 @@ const Checkout = () => {
                     Payment Method
                   </h2>
                   
-                  <div className="grid sm:grid-cols-3 gap-4">
+                  <div className="grid sm:grid-cols-4 gap-4">
                     <button
                       onClick={() => setPaymentMethod('card')}
                       className={`p-4 rounded-xl border-2 transition-colors ${
@@ -143,7 +277,7 @@ const Checkout = () => {
                       }`}
                     >
                       <CreditCard className={`w-8 h-8 mx-auto mb-2 ${paymentMethod === 'card' ? 'text-[#FF0040]' : 'text-gray-400'}`} />
-                      <p className={`font-medium ${paymentMethod === 'card' ? 'text-white' : 'text-gray-400'}`}>Credit/Debit Card</p>
+                      <p className={`font-medium ${paymentMethod === 'card' ? 'text-white' : 'text-gray-400'}`}>Card</p>
                     </button>
                     <button
                       onClick={() => setPaymentMethod('upi')}
@@ -155,13 +289,22 @@ const Checkout = () => {
                       <p className={`font-medium ${paymentMethod === 'upi' ? 'text-white' : 'text-gray-400'}`}>UPI</p>
                     </button>
                     <button
+                      onClick={() => setPaymentMethod('netbanking')}
+                      className={`p-4 rounded-xl border-2 transition-colors ${
+                        paymentMethod === 'netbanking' ? 'border-[#FF0040] bg-[#FF0040]/10' : 'border-gray-700 bg-[#2A2A2A]'
+                      }`}
+                    >
+                      <Wallet className={`w-8 h-8 mx-auto mb-2 ${paymentMethod === 'netbanking' ? 'text-[#FF0040]' : 'text-gray-400'}`} />
+                      <p className={`font-medium ${paymentMethod === 'netbanking' ? 'text-white' : 'text-gray-400'}`}>Net Banking</p>
+                    </button>
+                    <button
                       onClick={() => setPaymentMethod('wallet')}
                       className={`p-4 rounded-xl border-2 transition-colors ${
                         paymentMethod === 'wallet' ? 'border-[#FF0040] bg-[#FF0040]/10' : 'border-gray-700 bg-[#2A2A2A]'
                       }`}
                     >
                       <Wallet className={`w-8 h-8 mx-auto mb-2 ${paymentMethod === 'wallet' ? 'text-[#FF0040]' : 'text-gray-400'}`} />
-                      <p className={`font-medium ${paymentMethod === 'wallet' ? 'text-white' : 'text-gray-400'}`}>Wallets</p>
+                      <p className={`font-medium ${paymentMethod === 'wallet' ? 'text-white' : 'text-gray-400'}`}>Wallet</p>
                     </button>
                   </div>
 
@@ -221,6 +364,21 @@ const Checkout = () => {
                       />
                     </div>
                   )}
+
+                  {paymentMethod === 'netbanking' && (
+                    <div className="mt-6">
+                      <label className="text-gray-400 text-sm mb-2 block">Select Bank</label>
+                      <select className="w-full px-4 py-3 bg-[#2A2A2A] border border-gray-700 rounded-lg text-white focus:outline-none focus:border-[#FF0040]">
+                        <option value="">Select your bank</option>
+                        <option value="sbi">State Bank of India</option>
+                        <option value="hdfc">HDFC Bank</option>
+                        <option value="icici">ICICI Bank</option>
+                        <option value="axis">Axis Bank</option>
+                        <option value="kotak">Kotak Mahindra</option>
+                        <option value="yes">Yes Bank</option>
+                      </select>
+                    </div>
+                  )}
                 </div>
 
                 {/* Security Note */}
@@ -230,7 +388,11 @@ const Checkout = () => {
                 </div>
 
                 <button
-                  onClick={() => setStep(2)}
+                  onClick={() => {
+                    if (validateForm()) {
+                      setStep(2)
+                    }
+                  }}
                   className="w-full py-4 bg-[#FF0040] text-white rounded-xl font-bold text-lg hover:bg-[#CC0033] transition-colors"
                 >
                   Pay ₹{total}
@@ -336,11 +498,23 @@ const Checkout = () => {
                   <span>GST (18%)</span>
                   <span>₹{GST}</span>
                 </div>
+                {addInsurance && (
+                  <div className="flex justify-between text-gray-400">
+                    <span>Ticket Protection</span>
+                    <span>₹{insuranceFee}</span>
+                  </div>
+                )}
                 {couponDiscount > 0 && (
                   <div className="flex justify-between text-green-500">
-                    <span>Promo: {appliedPromo}</span>
+                    <span className="flex items-center gap-1">
+                      Promo: {appliedPromo}
+                      <button onClick={removePromo} className="text-xs hover:text-white">(×)</button>
+                    </span>
                     <span>-₹{couponDiscount}</span>
                   </div>
+                )}
+                {promoError && (
+                  <p className="text-red-500 text-xs mt-2">{promoError}</p>
                 )}
               </div>
 
