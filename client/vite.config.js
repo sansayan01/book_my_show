@@ -70,6 +70,21 @@ export default defineConfig({
                 statuses: [0, 200]
               }
             }
+          },
+          // Cache Google Fonts
+          {
+            urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'google-fonts-cache',
+              expiration: {
+                maxEntries: 10,
+                maxAgeSeconds: 60 * 60 * 24 * 365
+              },
+              cacheableResponse: {
+                statuses: [0, 200]
+              }
+            }
           }
         ]
       },
@@ -78,6 +93,46 @@ export default defineConfig({
       }
     })
   ],
+  build: {
+    // Enable code splitting using function format for newer Vite/Rolldown
+    rollupOptions: {
+      output: {
+        // Manual chunks as function for better code splitting
+        manualChunks: (id) => {
+          // Vendor chunk for React ecosystem
+          if (id.includes('node_modules/react')) {
+            return 'vendor-react'
+          }
+          // Animation library
+          if (id.includes('node_modules/framer-motion')) {
+            return 'vendor-animation'
+          }
+          // UI components
+          if (id.includes('node_modules/lucide-react')) {
+            return 'vendor-ui'
+          }
+          // Data/API
+          if (id.includes('node_modules/axios')) {
+            return 'vendor-data'
+          }
+        }
+      }
+    },
+    // Better chunk size warnings
+    chunkSizeWarningLimit: 1000,
+    // Minification
+    minify: 'terser',
+    terserOptions: {
+      compress: {
+        drop_console: true,
+        drop_debugger: true
+      }
+    }
+  },
+  // Optimization
+  optimizeDeps: {
+    include: ['react', 'react-dom', 'react-router-dom', 'framer-motion', 'lucide-react', 'axios']
+  },
   server: {
     allowedHosts: ['.trycloudflare.com', 'turbo-across-sociology-breeds.trycloudflare.com'],
     host: '0.0.0.0',

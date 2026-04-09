@@ -1,17 +1,20 @@
+import { memo } from 'react'
 import { Link } from 'react-router-dom'
-import { Star, Clock, Calendar } from 'lucide-react'
+import { Star, Clock } from 'lucide-react'
+import LazyImage from '../LazyImage/LazyImage'
 
-const MovieCard = ({ movie }) => {
+const MovieCard = memo(({ movie, index }) => {
   return (
     <Link 
       to={`/movie/${movie.id}`} 
       className="flex-shrink-0 w-40 md:w-44 group"
+      style={{ animationDelay: `${(index % 12) * 50}ms` }}
     >
       <div className="relative aspect-[2/3] rounded-xl overflow-hidden bg-[#2A2A2A] mb-3">
-        <img
+        <LazyImage
           src={movie.poster}
           alt={movie.title}
-          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+          className="w-full h-full"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
         
@@ -47,6 +50,8 @@ const MovieCard = ({ movie }) => {
       </div>
     </Link>
   )
-}
+})
+
+MovieCard.displayName = 'MovieCard'
 
 export default MovieCard

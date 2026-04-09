@@ -103,6 +103,12 @@ const userSchema = new mongoose.Schema({
   totalSpent: {
     type: Number,
     default: 0
+  },
+  // Preferred language for i18n
+  preferredLanguage: {
+    type: String,
+    enum: ['en', 'hi', 'es'],
+    default: 'en'
   }
 }, {
   timestamps: true

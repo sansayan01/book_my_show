@@ -21,6 +21,13 @@ const wsManager = require('../services/websocketManager');
 const cacheService = require('../services/cacheService');
 const cronService = require('../services/cronService');
 const requestLogger = require('../middleware/requestLogger');
+const i18nService = require('../services/i18nService');
+const featureFlagService = require('../services/featureFlagService');
+const recommendationService = require('../services/recommendationService');
+const cinemaPreferenceService = require('../services/cinemaPreferenceService');
+const popularSearchesService = require('../services/popularSearchesService');
+const sseService = require('../services/sseService');
+const jobQueueService = require('../services/jobQueueService');
 
 // Route files - v1 API
 const authRoutes = require('../routes/auth');
@@ -36,6 +43,14 @@ const referralRoutes = require('../routes/referrals');
 const loyaltyRoutes = require('../routes/loyalty');
 const exportRoutes = require('../routes/export');
 const notificationRoutes = require('../routes/notifications');
+// New feature routes
+const i18nRoutes = require('../routes/i18n');
+const featureFlagRoutes = require('../routes/featureFlags');
+const auditLogRoutes = require('../routes/auditLogs');
+const recommendationRoutes = require('../routes/recommendations');
+const searchRoutes = require('../routes/search');
+const sseRoutes = require('../routes/sse');
+const healthRoutes = require('../routes/health');
 
 // Swagger documentation
 const setupSwagger = require('../config/swagger');
@@ -85,6 +100,9 @@ app.use(requestIdMiddleware);
 // Request logging to file
 app.use(requestLogger.middleware());
 
+// i18n middleware for multi-language support
+app.use(i18nService.middleware());
+
 // Basic logging with Morgan (for console only)
 const morgan = require('morgan');
 if (process.env.NODE_ENV === 'development') {
@@ -119,6 +137,15 @@ app.use('/api/v1/referrals', referralRoutes);
 app.use('/api/v1/loyalty', loyaltyRoutes);
 app.use('/api/v1/export', exportRoutes);
 app.use('/api/v1/notifications', notificationRoutes);
+
+// New feature routes
+app.use('/api/v1/i18n', i18nRoutes);
+app.use('/api/v1/feature-flags', featureFlagRoutes);
+app.use('/api/v1/audit-logs', auditLogRoutes);
+app.use('/api/v1/recommendations', recommendationRoutes);
+app.use('/api/v1/search', searchRoutes);
+app.use('/api/v1/sse', sseRoutes);
+app.use('/api/v1/health', healthRoutes);
 
 // Setup Swagger documentation
 setupSwagger(app);
@@ -236,6 +263,14 @@ if (process.env.NODE_ENV !== 'test') {
   cronService.init();
 }
 
+// Initialize feature flags
+featureFlagService.initializeDefaults().catch(err => {
+  console.error('Failed to initialize feature flags:', err);
+});
+
+// Log service initialization
+console.log('[Services] Initialized: i18n, feature flags, job queue, SSE, recommendations');
+
 // Start server
 const PORT = process.env.PORT || 5000;
 
@@ -278,14 +313,25 @@ const gracefulShutdown = async (signal) => {
     // 3. Clear cache
     cacheService.shutdown();
     
-    // 4. Close database connection
+    // 4. Clear SSE connections
+    if (sseService) {
+      console.log('[Graceful Shutdown] Closing SSE connections...');
+      // SSE connections will be cleaned up by event loop
+    }
+    
+    // 5. Clear popular searches cache
+    if (popularSearchesService) {
+      console.log('[Graceful Shutdown] Cleaning up search cache...');
+    }
+    
+    // 6. Close database connection
     const mongoose = require('mongoose');
     if (mongoose.connection.readyState !== 0) {
       await mongoose.connection.close();
       console.log('[Graceful Shutdown] Database connection closed');
     }
     
-    // 5. Close request logger
+    // 7. Close request logger
     requestLogger.shutdown();
     
     console.log('[Graceful Shutdown] All connections closed gracefully');

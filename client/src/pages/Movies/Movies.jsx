@@ -1,7 +1,10 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, memo } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { Search, Filter, SlidersHorizontal, Grid, List, ChevronDown, Star, Clock, X, Calendar, MapPin, ChevronLeft, ChevronRight, Loader2 } from 'lucide-react'
 import MovieCard from '../../components/MovieCard/MovieCard'
+import FilterModal from '../../components/FilterModal/FilterModal'
+import SortDropdown from '../../components/SortDropdown/SortDropdown'
+import LazyImage from '../../components/LazyImage/LazyImage'
 import { movies } from '../../data/mockData'
 
 const Movies = () => {
@@ -10,7 +13,17 @@ const Movies = () => {
   const [showFilters, setShowFilters] = useState(true)
   const [viewMode, setViewMode] = useState('grid')
   const [sortBy, setSortBy] = useState('popularity')
+  const [sortOrder, setSortOrder] = useState('desc')
   const [activeTab, setActiveTab] = useState('nowShowing')
+  const [showFilterModal, setShowFilterModal] = useState(false)
+  const [filterOptions, setFilterOptions] = useState({
+    genre: [],
+    language: [],
+    format: [],
+    time: [],
+    price: 'all',
+    quickFilters: []
+  })
   
   // Infinite scroll
   const [displayedMovies, setDisplayedMovies] = useState(12)
@@ -24,6 +37,11 @@ const Movies = () => {
   // Filters
   const [selectedLanguages, setSelectedLanguages] = useState([])
   const [selectedGenres, setSelectedGenres] = useState([])
+  
+  // Calculate active filter count
+  const activeFilterCount = filterOptions.genre.length + filterOptions.language.length + 
+    filterOptions.format.length + filterOptions.time.length + 
+    (filterOptions.price !== 'all' ? 1 : 0) + filterOptions.quickFilters.length
   const [selectedFormats, setSelectedFormats] = useState([])
   const [selectedPrice, setSelectedPrice] = useState('all')
   const [selectedCity, setSelectedCity] = useState('All')
@@ -224,19 +242,12 @@ const Movies = () => {
               </div>
 
               {/* Sort Dropdown */}
-              <div className="relative">
-                <select
-                  value={sortBy}
-                  onChange={(e) => setSortBy(e.target.value)}
-                  className="appearance-none px-4 py-2.5 pr-10 bg-[#2A2A2A] border border-gray-700 rounded-lg text-gray-300 text-sm focus:outline-none focus:border-[#FF0040] cursor-pointer"
-                >
-                  <option value="popularity">Popularity</option>
-                  <option value="rating">Rating</option>
-                  <option value="date">Release Date</option>
-                  <option value="title">Title</option>
-                </select>
-                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
-              </div>
+              <SortDropdown 
+                sortBy={sortBy} 
+                onSortChange={setSortBy}
+                sortOrder={sortOrder}
+                onOrderChange={setSortOrder}
+              />
 
               {/* View Mode */}
               <div className="flex border border-gray-700 rounded-lg overflow-hidden">
@@ -253,6 +264,20 @@ const Movies = () => {
                   <List className="w-4 h-4" />
                 </button>
               </div>
+
+              {/* Mobile Filter Button */}
+              <button
+                onClick={() => setShowFilterModal(true)}
+                className="lg:hidden flex items-center gap-2 px-4 py-2.5 bg-[#2A2A2A] border border-gray-700 rounded-lg text-gray-300 text-sm"
+              >
+                <Filter className="w-4 h-4" />
+                Filters
+                {activeFilterCount > 0 && (
+                  <span className="w-5 h-5 bg-[#FF0040] text-white text-xs rounded-full flex items-center justify-center">
+                    {activeFilterCount}
+                  </span>
+                )}
+              </button>
             </div>
           </div>
         </div>
@@ -470,8 +495,32 @@ const Movies = () => {
           </div>
         </div>
       </div>
+      
+      {/* Filter Modal */}
+      <FilterModal
+        isOpen={showFilterModal}
+        onClose={() => setShowFilterModal(false)}
+        filters={filterOptions}
+        onFiltersChange={setFilterOptions}
+        onClear={() => setFilterOptions({
+          genre: [],
+          language: [],
+          format: [],
+          time: [],
+          price: 'all',
+          quickFilters: []
+        })}
+        onApply={() => {
+          setSelectedLanguages(filterOptions.language)
+          setSelectedGenres(filterOptions.genre)
+          setSelectedFormats(filterOptions.format)
+          setSelectedPrice(filterOptions.price)
+          setShowFilterModal(false)
+        }}
+      />
     </div>
   )
 }
 
-export default Movies
+// Memoize Movies component for performance
+export default memo(Movies)

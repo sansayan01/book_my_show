@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { Search, User, Menu, X, ChevronDown, Ticket, LogOut, ChevronRight, MapPin, Crown, Star, Zap, Tv, Sparkles } from 'lucide-react'
+import { Search, User, Menu, X, ChevronDown, Ticket, LogOut, ChevronRight, MapPin, Crown, Star, Zap, Tv, Sparkles, Shield } from 'lucide-react'
 import { useAuth } from '../../context/AuthContext'
 import { cities } from '../../data/mockData'
 import AuthModal from '../AuthModal/AuthModal'
@@ -268,6 +268,9 @@ const Header = () => {
                       </Link>
                       <Link to="/offers" className="block px-4 py-2.5 text-sm text-gray-700 hover:bg-red-50 hover:text-[#FF0040] transition-colors">
                         Offers
+                      </Link>
+                      <Link to="/privacy" className="block px-4 py-2.5 text-sm text-gray-700 hover:bg-red-50 hover:text-[#FF0040] transition-colors">
+                        Privacy Settings
                       </Link>
                       <button 
                         onClick={handleLogout}

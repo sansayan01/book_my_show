@@ -1,7 +1,9 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, memo } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
-import { Star, Clock, Calendar, ChevronDown, Play, Share2, Heart, Info, Minus, Plus, X, Link as LinkIcon, Copy, ChevronLeft, ChevronRight, ThumbsUp, ThumbsDown } from 'lucide-react'
+import { Star, Clock, Calendar, ChevronDown, Play, Share2, Heart, Info, Minus, Plus, X, Link as LinkIcon, Copy, ChevronLeft, ChevronRight, ThumbsUp, ThumbsDown, Bell } from 'lucide-react'
 import { movies } from '../../data/mockData'
+import ShareModal from '../../components/ShareModal/ShareModal'
+import BookingReminder from '../../components/BookingReminder/BookingReminder'
 
 const MovieDetails = () => {
   const { id } = useParams()
@@ -14,7 +16,15 @@ const MovieDetails = () => {
   const [showTimeSlots, setShowTimeSlots] = useState({})
   const [trailerOpen, setTrailerOpen] = useState(false)
   const [showShareModal, setShowShareModal] = useState(false)
+  const [showReminderModal, setShowReminderModal] = useState(false)
   const [castScrollPos, setCastScrollPos] = useState(0)
+  
+  // Show details for reminder
+  const showReminderDetails = selectedTime && selectedCinema ? {
+    title: movie.title,
+    cinema: cinemas.find(c => c.id === selectedCinema)?.name,
+    showTime: `${selectedDate} ${selectedTime}`,
+  } : null
 
   useEffect(() => {
     const found = movies.find(m => m.id === id)
@@ -178,6 +188,13 @@ const MovieDetails = () => {
                 >
                   <Share2 className="w-5 h-5" />
                   Share
+                </button>
+                <button 
+                  onClick={() => setShowReminderModal(true)}
+                  className="flex items-center gap-2 px-5 py-2.5 bg-white/10 text-white rounded-lg font-medium hover:bg-white/20 transition-colors"
+                >
+                  <Bell className="w-5 h-5" />
+                  Remind Me
                 </button>
               </div>
             </div>
@@ -629,8 +646,23 @@ const MovieDetails = () => {
           </div>
         </div>
       )}
+      
+      {/* Share Modal */}
+      <ShareModal 
+        isOpen={showShareModal} 
+        onClose={() => setShowShareModal(false)} 
+        title={movie.title}
+      />
+      
+      {/* Booking Reminder Modal */}
+      <BookingReminder
+        isOpen={showReminderModal}
+        onClose={() => setShowReminderModal(false)}
+        showDetails={showReminderDetails}
+      />
     </div>
   )
 }
 
-export default MovieDetails
+// Memoize MovieDetails for performance
+export default memo(MovieDetails)
