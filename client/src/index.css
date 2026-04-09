@@ -437,3 +437,82 @@ button:active, a:active {
     display: none !important;
   }
 }
+
+/* Accessibility: Focus visible styles */
+:focus-visible {
+  outline: 2px solid #FF0040;
+  outline-offset: 2px;
+}
+
+/* Skip to main content link */
+.skip-link {
+  position: absolute;
+  top: -40px;
+  left: 0;
+  background: #FF0040;
+  color: white;
+  padding: 8px 16px;
+  z-index: 100;
+  transition: top 0.3s;
+}
+
+.skip-link:focus {
+  top: 0;
+}
+
+/* Screen reader only class */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  :root {
+    --primary: #FF0040;
+    --dark: #000000;
+    --light: #FFFFFF;
+  }
+  
+  .btn-primary,
+  .btn-secondary {
+    border-width: 2px;
+  }
+}
+
+/* Keyboard navigation highlight */
+[data-keyboard-nav="true"] *:focus {
+  outline: 3px solid #FF0040 !important;
+  outline-offset: 2px !important;
+}
+
+/* Announcement/Alert styles for screen readers */
+[role="alert"] {
+  padding: 1rem;
+  background-color: #222;
+  border-left: 4px solid #FF0040;
+}
+
+/* Modal focus trap visual indicator */
+.focus-trap-active {
+  box-shadow: 0 0 0 4px rgba(255, 0, 64, 0.3);
+}
+
+/* Touch target sizing for accessibility */
+@media (pointer: coarse) {
+  button, 
+  a, 
+  input, 
+  select,
+  [role="button"] {
+    min-height: 44px;
+    min-width: 44px;
+  }
+}

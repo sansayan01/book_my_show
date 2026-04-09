@@ -29,6 +29,10 @@ import GiftCards from './pages/GiftCards/GiftCards'
 import Discussion from './pages/Discussion/Discussion'
 import Premiere from './pages/Premiere/Premiere'
 import Collections from './pages/Collections/Collections'
+import Dashboard from './pages/Dashboard/Dashboard'
+import Timeline from './pages/Timeline/Timeline'
+import Community from './pages/Community/Community'
+import Support from './pages/Support/Support'
 import { AuthProvider } from './context/AuthContext'
 import { BookingProvider } from './context/BookingContext'
 
@@ -52,7 +56,7 @@ function App() {
         <Router>
           <div className="min-h-screen flex flex-col">
             <Header />
-            <main className="flex-1">
+            <main id="main-content" className="flex-1">
               <AnimatePresence mode="wait">
                 <Routes>
                   <Route path="/" element={<PageTransition><Home /></PageTransition>} />
@@ -77,6 +81,10 @@ function App() {
                   <Route path="/offers" element={<PageTransition><Offers /></PageTransition>} />
                   <Route path="/gift-cards" element={<PageTransition><GiftCards /></PageTransition>} />
                   <Route path="/discussion" element={<PageTransition><Discussion /></PageTransition>} />
+                  <Route path="/dashboard" element={<PageTransition><Dashboard /></PageTransition>} />
+                  <Route path="/timeline" element={<PageTransition><Timeline /></PageTransition>} />
+                  <Route path="/community" element={<PageTransition><Community /></PageTransition>} />
+                  <Route path="/support" element={<PageTransition><Support /></PageTransition>} />
                 </Routes>
               </AnimatePresence>
             </main>

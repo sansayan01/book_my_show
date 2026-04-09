@@ -31,6 +31,11 @@ const bookingRoutes = require('../routes/bookings');
 const analyticsRoutes = require('../routes/analytics');
 const paymentRoutes = require('../routes/payments');
 const adminRoutes = require('../routes/admin');
+const walletRoutes = require('../routes/wallet');
+const referralRoutes = require('../routes/referrals');
+const loyaltyRoutes = require('../routes/loyalty');
+const exportRoutes = require('../routes/export');
+const notificationRoutes = require('../routes/notifications');
 
 // Swagger documentation
 const setupSwagger = require('../config/swagger');
@@ -109,6 +114,11 @@ app.use('/api/v1/bookings', bookingRoutes);
 app.use('/api/v1/analytics', analyticsRoutes);
 app.use('/api/v1/payments', paymentRoutes);
 app.use('/api/v1/admin', adminRoutes);
+app.use('/api/v1/wallet', walletRoutes);
+app.use('/api/v1/referrals', referralRoutes);
+app.use('/api/v1/loyalty', loyaltyRoutes);
+app.use('/api/v1/export', exportRoutes);
+app.use('/api/v1/notifications', notificationRoutes);
 
 // Setup Swagger documentation
 setupSwagger(app);

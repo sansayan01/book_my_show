@@ -72,5 +72,7 @@ cinemaSchema.pre('save', function(next) {
 
 cinemaSchema.index({ city: 1 });
 cinemaSchema.index({ name: 'text' });
+// 2dsphere index for geospatial queries
+cinemaSchema.index({ location: '2dsphere' });
 
 module.exports = mongoose.model('Cinema', cinemaSchema);

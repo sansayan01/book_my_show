@@ -67,7 +67,66 @@ userSchema.pre('save', async function(next) {
 
 // Compare password method
 userSchema.methods.comparePassword = async function(candidatePassword) {
-  return await bcrypt.compare(candidatePassword, this.password);
-};
+userSchema.index({ email: 1 });
+userSchema.index({ 'preferences.notifications': 1 });
+
+// Referral fields
+userSchema.add({
+  referralCode: {
+    type: String,
+    sparse: true,
+    index: true
+  },
+  referredBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    sparse: true
+  },
+  referralCount: {
+    type: Number,
+    default: 0
+  },
+  referralCreditsEarned: {
+    type: Number,
+    default: 0
+  },
+  // Wallet fields
+  walletBalance: {
+    type: Number,
+    default: 0,
+    min: 0
+  },
+  walletCurrency: {
+    type: String,
+    default: 'USD'
+  },
+  // Loyalty points
+  loyaltyPoints: {
+    type: Number,
+    default: 0,
+    min: 0
+  },
+  loyaltyTier: {
+    type: String,
+    enum: ['bronze', 'silver', 'gold', 'platinum'],
+    default: 'bronze'
+  },
+  totalBookings: {
+    type: Number,
+    default: 0
+  },
+  totalSpent: {
+    type: Number,
+    default: 0
+  }
+});
+
+// Generate referral code before saving
+userSchema.pre('save', async function(next) {
+  if (!this.referralCode) {
+    this.referralCode = 'REF' + Math.random().toString(36).substring(2, 8).toUpperCase();
+  }
+  next();
+});
 
 module.exports = mongoose.model('User', userSchema);

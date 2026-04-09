@@ -9,8 +9,11 @@ const {
   logout, 
   updatePassword,
   forgotPassword,
-  resetPassword
+  resetPassword,
+  socialLogin,
+  socialRegister
 } = require('../controllers/authController');
+const { validate, schemas } = require('../validators');
 
 const router = express.Router();
 
@@ -47,5 +50,9 @@ router.get('/me', protect, getMe);
 router.put('/update-password', protect, updatePasswordValidation, updatePassword);
 router.post('/forgot-password', forgotPasswordValidation, forgotPassword);
 router.post('/reset-password/:resetToken', resetPasswordValidation, resetPassword);
+
+// Social login routes
+router.post('/social/login', validate(schemas.socialAuth), socialLogin);
+router.post('/social/register', validate(schemas.socialAuth), socialRegister);
 
 module.exports = router;

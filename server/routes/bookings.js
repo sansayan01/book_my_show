@@ -8,7 +8,8 @@ const {
   getBooking, 
   getUserBookings,
   cancelBooking,
-  verifyBooking 
+  verifyBooking,
+  downloadTicket
 } = require('../controllers/bookingController');
 const { validate } = require('../middleware/validate');
 
@@ -56,5 +57,6 @@ router.post('/release-seats', protect, releaseSeats);
 // Booking endpoints
 router.post('/', protect, createBookingValidation, validate, createBooking);
 router.post('/:id/cancel', protect, cancelBooking);
+router.get('/:id/ticket.pdf', protect, downloadTicket);
 
 module.exports = router;

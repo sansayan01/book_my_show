@@ -3,7 +3,8 @@ import { Link, useLocation } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { 
   Home, Film, Zap, Calendar, Ticket, User, 
-  Search, Menu, X, Plus, ChevronUp, Bell
+  Search, Menu, X, Plus, ChevronUp, Bell,
+  LayoutDashboard, Clock, Headphones
 } from 'lucide-react'
 
 // Pull to Refresh Component
@@ -152,10 +153,10 @@ const BottomNav = () => {
   
   const navItems = [
     { id: 'home', path: '/', icon: Home, label: 'Home' },
+    { id: 'dashboard', path: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
+    { id: 'timeline', path: '/timeline', icon: Clock, label: 'Timeline' },
     { id: 'movies', path: '/movies', icon: Film, label: 'Movies' },
-    { id: 'premiere', path: '/premiere', icon: Zap, label: 'Premiere', badge: 'NEW' },
-    { id: 'events', path: '/events', icon: Calendar, label: 'Events' },
-    { id: 'profile', path: '/profile', icon: User, label: 'Profile' }
+    { id: 'support', path: '/support', icon: Headphones, label: 'Support' }
   ]
 
   // Hide/show nav on scroll

@@ -8,6 +8,134 @@ const {
   getResetPasswordToken 
 } = require('../middleware/auth');
 const emailService = require('../services/emailService');
+const referralService = require('../services/referralService');
+
+// @desc    Social login (Google/Facebook OAuth mock)
+// @route   POST /api/auth/social
+// @access  Public
+exports.socialLogin = async (req, res, next) => {
+  try {
+    const { provider, token, name, email } = req.body;
+
+    if (!provider || !token) {
+      return res.status(400).json({
+        success: false,
+        message: 'Provider and token are required'
+      });
+    }
+
+    if (!['google', 'facebook'].includes(provider)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid provider. Use google or facebook'
+      });
+    }
+
+    // Mock OAuth token validation - in production, verify with OAuth provider
+    // For demo, we accept the token and either find or create the user
+    let user = await User.findOne({ email });
+
+    if (!user) {
+      // Create new user
+      const randomPassword = crypto.randomBytes(16).toString('hex');
+      user = await User.create({
+        name: name || email.split('@')[0],
+        email,
+        password: randomPassword,
+        isActive: true
+      });
+
+      // Check for referral code in header
+      const refCode = req.headers['x-referral-code'];
+      if (refCode) {
+        try {
+          await referralService.applyReferral(user._id, refCode);
+        } catch (refError) {
+          // Ignore referral errors on social login
+        }
+      }
+    }
+
+    // Update last login
+    user.lastLogin = new Date();
+    await user.save({ validateBeforeSave: false });
+
+    sendTokenResponse(user, 200, res, provider);
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    Social register
+// @route   POST /api/auth/social/register
+// @access  Public
+exports.socialRegister = async (req, res, next) => {
+  try {
+    const { provider, token, name, email, phone } = req.body;
+
+    if (!provider || !token || !email) {
+      return res.status(400).json({
+        success: false,
+        message: 'Provider, token, and email are required'
+      });
+    }
+
+    // Check if user already exists
+    const existingUser = await User.findOne({ email });
+    if (existingUser) {
+      return res.status(400).json({
+        success: false,
+        message: 'User already exists with this email. Please login instead.'
+      });
+    }
+
+    const randomPassword = crypto.randomBytes(16).toString('hex');
+    const user = await User.create({
+      name: name || email.split('@')[0],
+      email,
+      phone,
+      password: randomPassword,
+      isActive: true
+    });
+
+    // Check for referral code
+    const refCode = req.headers['x-referral-code'];
+    if (refCode) {
+      try {
+        await referralService.applyReferral(user._id, refCode);
+      } catch (refError) {
+        // Ignore
+      }
+    }
+
+    sendTokenResponse(user, 201, res, provider);
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Helper function to get token and send response
+const sendTokenResponse = (user, statusCode, res, provider = null) => {
+  const accessToken = generateToken(user.id);
+  const refreshToken = generateRefreshToken(user.id);
+
+  const userData = {
+    id: user._id,
+    name: user.name,
+    email: user.email,
+    phone: user.phone,
+    avatar: user.avatar,
+    role: user.role,
+    provider
+  };
+
+  res.status(statusCode).json({
+    success: true,
+    accessToken,
+    refreshToken,
+    data: userData
+  });
+};
 
 // @desc    Register new user
 // @route   POST /api/auth/register
@@ -336,24 +464,15 @@ exports.resetPassword = async (req, res, next) => {
   }
 };
 
-// Helper function to get token and send response
-const sendTokenResponse = (user, statusCode, res) => {
-  const accessToken = generateToken(user.id);
-  const refreshToken = generateRefreshToken(user.id);
-
-  const userData = {
-    id: user._id,
-    name: user.name,
-    email: user.email,
-    phone: user.phone,
-    avatar: user.avatar,
-    role: user.role
-  };
-
-  res.status(statusCode).json({
-    success: true,
-    accessToken,
-    refreshToken,
-    data: userData
-  });
+module.exports = {
+  register: exports.register,
+  login: exports.login,
+  refreshToken: exports.refreshToken,
+  logout: exports.logout,
+  getMe: exports.getMe,
+  updatePassword: exports.updatePassword,
+  forgotPassword: exports.forgotPassword,
+  resetPassword: exports.resetPassword,
+  socialLogin: exports.socialLogin,
+  socialRegister: exports.socialRegister
 };

@@ -8,6 +8,11 @@ const seatLockService = require('../services/seatLockService');
 const emailService = require('../services/emailService');
 const paymentService = require('../services/paymentService');
 const qrService = require('../services/qrService');
+const pdfService = require('../services/pdfService');
+const notificationService = require('../services/notificationService');
+const loyaltyService = require('../services/loyaltyService');
+const referralService = require('../services/referralService');
+const walletService = require('../services/walletService');
 
 // @desc    Lock seats temporarily during checkout
 // @route   POST /api/bookings/lock-seats
@@ -224,11 +229,35 @@ exports.createBooking = async (req, res, next) => {
       console.error('Email notification error:', emailError);
     }
 
+    // Award loyalty points (async)
+    loyaltyService.awardPointsForBooking(req.user.id, totalAmount).catch(err =>
+      console.error('Loyalty points error:', err)
+    );
+
+    // Award referral bonus if first booking
+    referralService.awardOnFirstBooking(req.user.id, totalAmount).catch(err =>
+      console.error('Referral award error:', err)
+    );
+
+    // Send in-app notification
+    notificationService.sendBookingConfirmation(req.user.id, populatedBooking).catch(err =>
+      console.error('Notification error:', err)
+    );
+
+    // Generate PDF ticket
+    let pdfBuffer = null;
+    try {
+      pdfBuffer = await pdfService.generateBookingTicket(populatedBooking);
+    } catch (pdfError) {
+      console.error('PDF generation error:', pdfError);
+    }
+
     res.status(201).json({
       success: true,
       data: {
         ...populatedBooking.toObject(),
-        qrCode: qrCode.dataURL
+        qrCode: qrCode.dataURL,
+        hasPDF: !!pdfBuffer
       },
       message: 'Booking created successfully'
     });
@@ -442,6 +471,41 @@ exports.verifyBooking = async (req, res, next) => {
       success: true,
       data: booking
     });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    Download booking ticket as PDF
+// @route   GET /api/bookings/:id/ticket.pdf
+// @access  Private
+exports.downloadTicket = async (req, res, next) => {
+  try {
+    const booking = await Booking.findById(req.params.id)
+      .populate('movie', 'title poster duration language')
+      .populate('cinema', 'name address city')
+      .populate('show', 'date time screen format language');
+
+    if (!booking) {
+      return res.status(404).json({
+        success: false,
+        message: 'Booking not found'
+      });
+    }
+
+    if (booking.user.toString() !== req.user.id) {
+      return res.status(403).json({
+        success: false,
+        message: 'Not authorized to download this ticket'
+      });
+    }
+
+    const pdf = await pdfService.generateBookingTicket(booking);
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="ticket_${booking.ticketCode || booking._id}.pdf"`);
+    res.setHeader('Content-Length', pdf.size);
+    res.status(200).send(pdf.data);
   } catch (error) {
     next(error);
   }

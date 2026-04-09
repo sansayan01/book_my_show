@@ -76,8 +76,34 @@ const initPWA = async () => {
 // Initialize PWA
 initPWA()
 
+// Accessibility: Keyboard navigation detection
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Tab') {
+    document.body.setAttribute('data-keyboard-nav', 'true')
+  }
+})
+
+document.addEventListener('mousedown', () => {
+  document.body.removeAttribute('data-keyboard-nav')
+})
+
+// Accessibility: Reduce motion preference
+const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)')
+if (prefersReducedMotion.matches) {
+  document.documentElement.classList.add('reduce-motion')
+}
+
+// Accessibility: High contrast mode
+const prefersHighContrast = window.matchMedia('(prefers-contrast: high)')
+if (prefersHighContrast.matches) {
+  document.documentElement.classList.add('high-contrast')
+}
+
 createRoot(document.getElementById('root')).render(
   <StrictMode>
+    <a href="#main-content" className="skip-link">
+      Skip to main content
+    </a>
     <App />
   </StrictMode>,
 )

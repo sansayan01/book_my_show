@@ -5,6 +5,7 @@ import { useAuth } from '../../context/AuthContext'
 import { cities } from '../../data/mockData'
 import AuthModal from '../AuthModal/AuthModal'
 import AdvancedSearch from '../AdvancedSearch/AdvancedSearch'
+import Notifications, { NotificationBell } from '../Notifications/Notifications'
 
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
@@ -14,6 +15,7 @@ const Header = () => {
   const [showUserMenu, setShowUserMenu] = useState(false)
   const [activeDropdown, setActiveDropdown] = useState(null)
   const [showAdvancedSearch, setShowAdvancedSearch] = useState(false)
+  const [showNotifications, setShowNotifications] = useState(false)
   const { user, openAuthModal, logout } = useAuth()
   const navigate = useNavigate()
   const dropdownRef = useRef(null)
@@ -82,7 +84,9 @@ const Header = () => {
       ]
     },
     { name: 'Offers', path: '/offers' },
-    { name: 'Gift Cards', path: '/gift-cards' }
+    { name: 'Gift Cards', path: '/gift-cards' },
+    { name: 'Timeline', path: '/timeline' },
+    { name: 'Community', path: '/community' }
   ]
 
   useEffect(() => {
@@ -212,6 +216,18 @@ const Header = () => {
                 <Search className="w-5 h-5" />
               </button>
               
+              {/* Notifications Bell */}
+              <div className="relative">
+                <NotificationBell 
+                  onClick={() => setShowNotifications(!showNotifications)}
+                  unreadCount={3}
+                />
+                <Notifications 
+                  isOpen={showNotifications}
+                  onClose={() => setShowNotifications(false)}
+                />
+              </div>
+              
               {user ? (
                 <div className="relative">
                   <button
@@ -243,6 +259,12 @@ const Header = () => {
                       </Link>
                       <Link to="/my-bookings" className="block px-4 py-2.5 text-sm text-gray-700 hover:bg-red-50 hover:text-[#FF0040] transition-colors">
                         My Bookings
+                      </Link>
+                      <Link to="/dashboard" className="block px-4 py-2.5 text-sm text-gray-700 hover:bg-red-50 hover:text-[#FF0040] transition-colors">
+                        Dashboard
+                      </Link>
+                      <Link to="/support" className="block px-4 py-2.5 text-sm text-gray-700 hover:bg-red-50 hover:text-[#FF0040] transition-colors">
+                        Help & Support
                       </Link>
                       <Link to="/offers" className="block px-4 py-2.5 text-sm text-gray-700 hover:bg-red-50 hover:text-[#FF0040] transition-colors">
                         Offers

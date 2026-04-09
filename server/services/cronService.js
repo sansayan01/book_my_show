@@ -5,8 +5,11 @@
 
 const cron = require('node-cron');
 const Booking = require('../models/Booking');
+const ShowReminder = require('../models/ShowReminder');
+const Show = require('../models/Show');
 const cacheService = require('./cacheService');
 const seatLockService = require('./seatLockService');
+const notificationService = require('./notificationService');
 
 class CronService {
   constructor() {
@@ -67,6 +70,13 @@ class CronService {
       schedule: '*/10 * * * *',
       task: cron.schedule('*/10 * * * *', () => this.healthCheck()),
       description: 'Monitor database and memory health'
+    });
+
+    // Task 8: Send show reminders (run every minute)
+    this.tasks.set('sendShowReminders', {
+      schedule: '* * * * *',
+      task: cron.schedule('* * * * *', () => this.sendShowReminders()),
+      description: 'Send show reminder notifications'
     });
 
     console.log('[Cron] Service initialized with', this.tasks.size, 'scheduled tasks');
@@ -250,6 +260,52 @@ class CronService {
       }
     } catch (error) {
       console.error('[Cron] Error in health check:', error.message);
+    }
+  }
+
+  /**
+   * Send show reminder notifications
+   */
+  async sendShowReminders() {
+    try {
+      const now = new Date();
+      const windowStart = new Date(now.getTime() - 30 * 1000); // 30 seconds ago
+      const windowEnd = new Date(now.getTime() + 30 * 1000);   // next 30 seconds
+
+      const dueReminders = await ShowReminder.find({
+        isActive: true,
+        isSent: false,
+        reminderTime: { $gte: windowStart, $lte: windowEnd }
+      })
+      .populate({
+        path: 'show',
+        populate: [
+          { path: 'movie', select: 'title' },
+          { path: 'cinema', select: 'name' }
+        ]
+      });
+
+      if (dueReminders.length > 0) {
+        console.log(`[Cron] Sending ${dueReminders.length} show reminders`);
+      }
+
+      for (const reminder of dueReminders) {
+        try {
+          await notificationService.sendShowReminder(
+            reminder.user,
+            reminder.show,
+            null
+          );
+
+          reminder.isSent = true;
+          reminder.sentAt = new Date();
+          await reminder.save();
+        } catch (err) {
+          console.error(`[Cron] Error sending reminder ${reminder._id}:`, err.message);
+        }
+      }
+    } catch (error) {
+      console.error('[Cron] Error in show reminders:', error.message);
     }
   }
 

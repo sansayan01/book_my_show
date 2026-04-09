@@ -272,6 +272,31 @@ class WebSocketManager {
   }
 
   /**
+   * Send message to user by userId (broadcast to all their connections)
+   */
+  sendToUser(userId, message) {
+    let sent = false;
+    for (const [clientId, client] of this.clients) {
+      if (client.userId === userId && client.ws.readyState === WebSocket.OPEN) {
+        client.ws.send(JSON.stringify(message));
+        sent = true;
+      }
+    }
+    return sent;
+  }
+
+  /**
+   * Authenticate a connection with a user ID
+   */
+  authenticateClient(clientId, userId) {
+    const client = this.clients.get(clientId);
+    if (client) {
+      client.userId = userId;
+      client.authenticated = true;
+    }
+  }
+
+  /**
    * Handle client disconnect
    */
   handleDisconnect(clientId) {
