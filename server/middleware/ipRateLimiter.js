@@ -127,13 +127,21 @@ const ipRateLimiter = (options = {}) => {
   });
 };
 
+// Pre-created rate limiters for each tier (created once at module load)
+const preCreatedLimiters = {
+  TRUSTED: ipRateLimiter({ tier: 'TRUSTED' }),
+  STANDARD: ipRateLimiter({ tier: 'STANDARD' }),
+  LIMITED: ipRateLimiter({ tier: 'LIMITED' }),
+  BANNED: ipRateLimiter({ tier: 'BANNED' }),
+};
+
 /**
  * Dynamic rate limiter based on IP tier
  */
 const dynamicRateLimiter = (req, res, next) => {
   const ip = req.ip || req.connection.remoteAddress;
   const tier = getIPTier(ip);
-  const limiter = ipRateLimiter({ tier });
+  const limiter = preCreatedLimiters[tier] || preCreatedLimiters.STANDARD;
   
   limiter(req, res, next);
 };
